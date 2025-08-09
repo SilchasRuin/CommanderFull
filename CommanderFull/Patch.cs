@@ -22,7 +22,6 @@ internal static class ArmorRegiment
                 targetField = closureType.GetField("unburdenedIron", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
             if (targetField == null)
             {
-                File.AppendAllText("HarmonyFailLog.txt", $"[ArmorRegiment] Could not locate closure field 'unburdenedIron'. closureType: {closureType?.FullName}\n");
                 return enumerable;
             }
             MethodInfo shouldSkipMethod = AccessTools.Method(typeof(MyConditionPatch), nameof(MyConditionPatch.ShouldSkip));
@@ -34,15 +33,13 @@ internal static class ArmorRegiment
             );
             if (matched.IsInvalid || matcher.IsInvalid)
             {
-                File.AppendAllText("HarmonyFailLog.txt", "[ArmorRegiment] Pattern (ldfld unburdenedIron + brtrue) not found.\n");
                 return codeInstructions;
             }
             // Position currently at the start of the match (ldfld).
             // Advance to the branch instruction (index + 1)
             matcher.Advance(1);
-            // Save branch opcode/operand (preserve either brtrue.s or brtrue)
-            var branchInstr = matcher.Instruction;
-            var branchOp = branchInstr.opcode;
+            // var branchInstr = matcher.Instruction;
+            // var branchOp = branchInstr.opcode;
             matcher.Insert(
                 new CodeInstruction(OpCodes.Or),
                 new CodeInstruction(OpCodes.Ldarg_0),
@@ -52,12 +49,9 @@ internal static class ArmorRegiment
         }
         catch (Exception ex)
         {
-            File.AppendAllText("HarmonyFailLog.txt", $"[ArmorRegiment] Exception in transpiler: {ex}\n");
             return codeInstructions;
         }
     }
-
-    // Helper: compares a CodeInstruction.operand to a FieldInfo in a safe way.
     private static bool OperandIsFieldEqual(object? operand, FieldInfo? field)
     {
         if (operand == null || field == null) return false;
