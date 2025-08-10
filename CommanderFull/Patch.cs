@@ -10,89 +10,34 @@ internal static class ArmorRegiment
 {
     internal static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
     {
-        IEnumerable<CodeInstruction> enumerable = instructions.ToList();
-        IEnumerable<CodeInstruction> codeInstructions = instructions as CodeInstruction[] ?? enumerable.ToArray();
-        try
-        {
-            // 1) Find the closure/display-class type that contains the 'unburdenedIron' field.
-            string closureTypeName = "Dawnsbury.Core.Creatures.Creature+<>c__DisplayClass340_0";
-            Type? closureType = AccessTools.TypeByName(closureTypeName);
-            FieldInfo? targetField = null;
-            if (closureType != null)
-                targetField = closureType.GetField("unburdenedIron", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            if (targetField == null)
-            {
-                return enumerable;
-            }
-            MethodInfo shouldSkipMethod = AccessTools.Method(typeof(MyConditionPatch), nameof(MyConditionPatch.ShouldSkip));
-            var matcher = new CodeMatcher(codeInstructions, generator);
-            // Attempt to find the exact sequence: ldfld <closureType>::unburdenedIron  followed by brtrue.s or brtrue
-            var matched = matcher.MatchStartForward(
-                new CodeMatch(ci => ci.opcode == OpCodes.Ldfld && OperandIsFieldEqual(ci.operand, targetField)),
-                new CodeMatch(ci => ci.opcode == OpCodes.Brtrue_S || ci.opcode == OpCodes.Brtrue)
-            );
-            if (matched.IsInvalid || matcher.IsInvalid)
-            {
-                return codeInstructions;
-            }
-            // Position currently at the start of the match (ldfld).
-            // Advance to the branch instruction (index + 1)
-            matcher.Advance(1);
-            // var branchInstr = matcher.Instruction;
-            // var branchOp = branchInstr.opcode;
-            matcher.Insert(
-                new CodeInstruction(OpCodes.Or),
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Call, shouldSkipMethod)
-            );
-            return matcher.InstructionEnumeration();
-        }
-        catch (Exception ex)
-        {
-            return codeInstructions;
-        }
+        var matcher = new CodeMatcher(instructions, generator);
+        //match: ldloc. to ldfld bool unburdenedIron to brtrue/brtrue.s
+        matcher.MatchStartForward(
+            new CodeMatch(ci => ci.opcode.Name != null && ci.opcode.Name.StartsWith("ldloc")),
+            new CodeMatch(ci => ci.opcode == OpCodes.Ldfld && IsUnburdenedIronField(ci.operand)),
+            new CodeMatch(ci => ci.opcode == OpCodes.Brtrue || ci.opcode == OpCodes.Brtrue_S)
+        );
+        if (!matcher.IsValid) return matcher.InstructionEnumeration();
+        MethodInfo shouldSkipMethod = AccessTools.Method(typeof(MyConditionPatch), nameof(MyConditionPatch.ShouldSkip));
+        //advance to before the branch
+        matcher.Advance(2);
+        matcher.Insert(
+            new CodeInstruction(OpCodes.Ldarg_0),
+            new CodeInstruction(OpCodes.Call, shouldSkipMethod),
+            new CodeInstruction(OpCodes.Or)
+        );
+        return matcher.InstructionEnumeration();
     }
-    private static bool OperandIsFieldEqual(object? operand, FieldInfo? field)
-    {
-        if (operand == null || field == null) return false;
-        try
-        {
-            if (operand is FieldInfo fi)
-            {
-                return fi.Name == field.Name && fi.DeclaringType?.FullName == field.DeclaringType?.FullName;
-            }
-            // Mono.Cecil.FieldReference case
-            var opType = operand.GetType();
-            var nameProp = opType.GetProperty("Name");
-            var declaringTypeProp = opType.GetProperty("DeclaringType");
-            if (nameProp != null && declaringTypeProp != null)
-            {
-                var opName = nameProp.GetValue(operand) as string;
-                var declaringTypeRef = declaringTypeProp.GetValue(operand);
-                string? declaringTypeFullName = null;
-                if (declaringTypeRef != null)
-                {
-                    var dtNameProp = declaringTypeRef.GetType().GetProperty("FullName");
-                    if (dtNameProp != null)
-                        declaringTypeFullName = dtNameProp.GetValue(declaringTypeRef) as string;
-                }
 
-                if (opName != null && declaringTypeFullName != null)
-                {
-                    return opName == field.Name && declaringTypeFullName == field.DeclaringType?.FullName;
-                }
-            }
-            // Fallback: string compare
-            var s = operand.ToString();
-            return s != null && s.Contains(field.Name) && field.DeclaringType?.Name != null && s.Contains(field.DeclaringType?.Name!);
-        }
-        catch
-        {
-            return false;
-        }
+    private static bool IsUnburdenedIronField(object operand)
+    {
+        if (operand is FieldInfo fi)
+            return fi.FieldType == typeof(bool) && fi.Name == "unburdenedIron";
+        //fallback to string check
+        string? opStr = operand.ToString();
+        return opStr != null && opStr.Contains("unburdenedIron") && opStr.Contains("Boolean");
     }
 }
-
 public static class MyConditionPatch
 {
     public static bool ShouldSkip(Creature creature)

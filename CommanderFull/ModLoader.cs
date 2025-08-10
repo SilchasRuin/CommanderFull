@@ -5,6 +5,7 @@ using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb.TrueFeatDb;
 using Dawnsbury.Core.CombatActions;
+using Dawnsbury.Core.Coroutines.Requests;
 using Dawnsbury.Core.Creatures;
 using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Core;
@@ -12,6 +13,7 @@ using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Targeting;
 using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
+using Dawnsbury.Display.Controls.Statblocks;
 using Dawnsbury.Display.Illustrations;
 using Dawnsbury.Display.Text;
 using Dawnsbury.Modding;
@@ -209,7 +211,23 @@ public class ModLoader
                         : Usability.Usable;
                 });
             action.Description = action.Description.Insert(action.Description.IndexOf('.'), " or be wielding a shield");
-
         });
+        //update statblocks
+        int abilitiesIndex = CreatureStatblock.CreatureStatblockSectionGenerators.FindIndex(gen => gen.Name == "Abilities");
+        CreatureStatblock.CreatureStatblockSectionGenerators.Insert(abilitiesIndex,
+            new CreatureStatblockSectionGenerator("Prepared tactics", TacticsStatBlock.DescribePreparedTactics));
+        LoadOrder.AtEndOfLoadingSequence += () =>
+        {
+            Feat? commanderClass = AllFeats.All.FirstOrDefault(ft => ft.FeatName == ModData.MFeatNames.Commander);
+            commanderClass!.RulesText = commanderClass.RulesText.Replace("Ability boosts", "Attribute boosts");
+        };
+    }
+    public static AdvancedRequest NewSleepRequest(int sleepTime)
+    {
+        Type? sleepRequest = typeof(AdvancedRequest).Assembly.GetType("Dawnsbury.Core.Coroutines.Requests.SleepRequest");
+        var constructor = sleepRequest?.GetConstructor([typeof(int)]);
+        var sleep = constructor?.Invoke([sleepTime]);
+        sleep?.GetType().GetProperty("CanBeClickedThrough")?.SetMethod?.Invoke(sleep, [false]);
+        return (AdvancedRequest)sleep!;
     }
 }

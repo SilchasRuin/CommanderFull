@@ -19,13 +19,15 @@ public abstract class ModData
         public static readonly Trait Tactic = ModManager.RegisterTrait("Tactic");
         public static readonly Trait TacticPre = ModManager.RegisterTrait("Tactic2", new TraitProperties("Tactic", false));
         public static readonly Trait BasicTactic = ModManager.RegisterTrait("BasicTactic", new TraitProperties("Tactic", false));
-        public static readonly Trait ExpertTactic = ModManager.RegisterTrait("ExpertTactic2", new TraitProperties("Expert Tactic", true));
-        public static readonly Trait MasterTactic = ModManager.RegisterTrait("MasterTactic2", new TraitProperties("Master Tactic", true));
-        public static readonly Trait LegendaryTactic = ModManager.RegisterTrait("LegendaryTactic2", new TraitProperties("Legendary Tactic", true));
+        public static readonly Trait OffensiveTactic = ModManager.RegisterTrait("OffensiveTactic", new TraitProperties("Offensive", true));
+        public static readonly Trait MobilityTactic = ModManager.RegisterTrait("MobilityTactic", new TraitProperties("Mobility", true));
+        public static readonly Trait ExpertTactic = ModManager.RegisterTrait("ExpertTactic2", new TraitProperties("Expert", true));
+        public static readonly Trait MasterTactic = ModManager.RegisterTrait("MasterTactic2", new TraitProperties("Master", true));
+        public static readonly Trait LegendaryTactic = ModManager.RegisterTrait("LegendaryTactic2", new TraitProperties("Legendary", true));
         public static readonly Trait BasicTacticPre = ModManager.RegisterTrait("BasicTactic2", new TraitProperties("Tactic", true));
-        public static readonly Trait ExpertTacticPre = ModManager.RegisterTrait("ExpertTactic", new TraitProperties("Expert Tactic", true));
-        public static readonly Trait MasterTacticPre = ModManager.RegisterTrait("MasterTactic", new TraitProperties("Master Tactic", true));
-        public static readonly Trait LegendaryTacticPre = ModManager.RegisterTrait("LegendaryTactic", new TraitProperties("Legendary Tactic", true));
+        public static readonly Trait ExpertTacticPre = ModManager.RegisterTrait("ExpertTactic", new TraitProperties("Expert", false));
+        public static readonly Trait MasterTacticPre = ModManager.RegisterTrait("MasterTactic", new TraitProperties("Master", false));
+        public static readonly Trait LegendaryTacticPre = ModManager.RegisterTrait("LegendaryTactic", new TraitProperties("Legendary", false));
         public static readonly Trait Banner = ModManager.RegisterTrait("Banner");
         public static readonly Trait Brandish = ModManager.RegisterTrait("Brandish", new TraitProperties("Brandish", true, "To use an ability that has the brandish trait, you must be holding your banner in one hand or wielding a weapon it is attached to. You cannot use free actions or reactions granted as part of a brandish action unless noted otherwise.", true));
     }
@@ -59,6 +61,8 @@ public abstract class ModData
         public static readonly FeatName RallyingBanner = ModManager.RegisterFeatName("FC_RallyingBanner", "Rallying Banner");
         public static readonly FeatName UnrivaledAnalysis = ModManager.RegisterFeatName("FC_UnrivaledAnalysis", "Unrivaled Analysis");
         public static readonly FeatName ReactiveStrike = ModManager.RegisterFeatName("FC_ReactiveStrike", "Reactive Strike");
+        public static readonly FeatName TacticalExcellence4 = ModManager.RegisterFeatName("TacticalExcellence4", "Tactical Excellence - 4");
+        public static readonly FeatName TacticalExcellence8 = ModManager.RegisterFeatName("TacticalExcellence8", "Tactical Excellence - 8");
         #endregion
         #region tactics
         public static readonly FeatName GatherToMe = ModManager.RegisterFeatName("FC_GatherToMe", "Gather to Me!");
