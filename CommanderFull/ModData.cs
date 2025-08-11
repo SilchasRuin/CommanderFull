@@ -16,7 +16,7 @@ public abstract class ModData
     public abstract class MTraits
     {
         public static readonly Trait Commander = ModManager.RegisterTrait("Commander", new TraitProperties("Commander", true) { IsClassTrait = true });
-        public static readonly Trait Tactic = ModManager.RegisterTrait("Tactic");
+        public static readonly Trait Tactic = ModManager.RegisterTrait("Tactic", new TraitProperties("Tactic", true, "Tactics are special abilities that involve you signaling your allies to perform predetermined maneuvers. To use a tactic ability, you must have one or more willing allies you have instructed beforehand during your daily preparations, called squadmates. Your squadmates must also be able to perceive your signal, either when you speak or shout it (in which case the tactic action gains the auditory trait), or by physically signaling them, typically by waving your banner (in which case it gains the visual trait). While you can use multiple tactic actions in a round, a character cannot respond to more than one tactic per round, regardless of source. You can’t Ready a tactic."));
         public static readonly Trait TacticPre = ModManager.RegisterTrait("Tactic2", new TraitProperties("Tactic", false));
         public static readonly Trait BasicTactic = ModManager.RegisterTrait("BasicTactic", new TraitProperties("Tactic", false));
         public static readonly Trait OffensiveTactic = ModManager.RegisterTrait("OffensiveTactic", new TraitProperties("Offensive", true));
@@ -101,6 +101,8 @@ public abstract class ModData
         public static QEffectId DemoCharge  { get; } = ModManager.RegisterEnumMember<QEffectId>("DemoCharge");
         public static QEffectId BuckleBlitz { get; } = ModManager.RegisterEnumMember<QEffectId>("BuckleBlitz");
         public static QEffectId StupefyingRaid { get; } = ModManager.RegisterEnumMember<QEffectId>("StupefyingRaid");
+        public static QEffectId AudibleTactics { get; } = ModManager.RegisterEnumMember<QEffectId>("AudibleTactics");
+        public static QEffectId VisualTactics { get; } = ModManager.RegisterEnumMember<QEffectId>("VisualTactics");
         
     }
     public abstract class MTileQEffectIds
@@ -113,11 +115,13 @@ public abstract class ModData
         public static readonly PossibilitySectionId MobilityTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("MobilityTactics");
         public static readonly PossibilitySectionId OffensiveTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("OffensiveTactics");
         public static readonly PossibilitySectionId ExpertTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("ExpertTactics");
-        
+        public static readonly PossibilitySectionId AuditoryTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("AuditoryTactics");
+        public static readonly PossibilitySectionId VisualTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("VisualTactics");
     }
     public abstract class MSubmenuIds
     {
         public static readonly SubmenuId Commander = ModManager.RegisterEnumMember<SubmenuId>("Commander");
+        public static readonly SubmenuId SignalToggle = ModManager.RegisterEnumMember<SubmenuId>("SignalToggle");
     }
     public abstract class MRuneKinds
     {
@@ -161,5 +165,7 @@ public abstract class ModData
         public static readonly Illustration TacticalTakedown = new ModdedIllustration("FCAssets/TacticalTakedown.png");
         public static readonly Illustration DemoralizingCharge = new ModdedIllustration("FCAssets/DemoralizingCharge.png");
         public static readonly Illustration Reposition = new ModdedIllustration("FCAssets/Reposition.png");
+        public static readonly Illustration Auditory = new ModdedIllustration("FCAssets/Auditory.png");
+        public static readonly Illustration Visual = new ModdedIllustration("FCAssets/Visual.png");
     }
 }

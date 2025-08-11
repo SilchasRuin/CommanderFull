@@ -55,6 +55,7 @@ public abstract partial class Commander
         {
             int level = tactic.Traits.Contains(MTraits.LegendaryTactic) ? 19 : tactic.Traits.Contains(MTraits.MasterTactic) ? 15 : tactic.Traits.Contains(MTraits.ExpertTactic) ? 7 : 1;
             Feat prereq = CreatePrereqTacticsBasic((ActionFeat)tactic, level);
+            prereq.WithIllustration(tactic.Illustration);
             tactic.WithPrerequisite(values => values.HasFeat(prereq),
                 "You must have this tactic in your folio to select it.");
             tactic.WithOnCreature(cr =>
@@ -92,7 +93,7 @@ public abstract partial class Commander
                 [Trait.Reflex, Trait.Will, Trait.Perception],
                 2,
                 $"{{b}}1. Commander's Banner{{/b}} A commander needs a battle standard so their allies can locate them on the field. You start play with a custom {CreateTooltips("banner", "Your banner is a special item you carry, either in your inventory or in hand. As long as your banner is visible and in your possession, it provides an aura that gives you and all allies in a 30-foot emanation a +1 status bonus to Will saves and DCs against fear effects. This effect is paused or resumed as part of any action you would typically use to stow or retrieve your banner.")} that you can use to signal allies when using tactics or to deploy specific abilities.\n\n" +
-                $"{{b}}2. Tactics{{/b}} By studying and practicing the strategic arts of war, you can guide your allies to victory. You begin play with a folio containing five {CreateTooltips("tactics", "{i}Preparing and Changing Tactics{/i}\nYou may prepare three tactics from your folio as a precombat preparation. At the start of an encounter, you can instruct a total number of party members equal to 2 + your Intelligence modifier, enabling these allies to respond to your tactics in combat. These allies are your squadmates. A squadmate always has the option not to respond to your tactical signal if they do not wish to. You count as one of your squadmates for the purposes of participating in or benefiting from a tactic (though you do not count against your own maximum number of squadmates).\n\n{i}Gaining New Tactics{/i}\nYou add additional tactics to your folio and increase the number of tactics you can prepare when you gain the expert tactician, master tactician, and legendary tactician class features. You can also add tactics to your folio with the Tactical Expansion feat, though this does not change the number you can have prepared.")}. These are combat techniques and coordinated maneuvers you can instruct your allies in, enabling them to respond to your signals in combat. As you increase in level, you gain the ability to learn more potent tactics.\n\n" +
+                $"{{b}}2. Tactics{{/b}} By studying and practicing the strategic arts of war, you can guide your allies to victory. You begin play with a folio containing five {CreateTooltips("tactics", "{i}Preparing and Changing Tactics{/i}\nYou may prepare three tactics from your folio as a precombat preparation. At the start of an encounter, you can instruct a total number of party members equal to 2 + your Intelligence modifier, enabling these allies to respond to your tactics in combat. These allies are your squadmates. A squadmate always has the option not to respond to your tactical signal if they do not wish to. You count as one of your squadmates for the purposes of participating in or benefiting from a tactic (though you do not count against your own maximum number of squadmates).\n\n{i}Gaining New Tactics{/i}\nYou add additional tactics to your folio and increase the number of tactics you can prepare when you gain the expert tactician, master tactician, and legendary tactician class features. You can also add tactics to your folio with the Tactical Expansion feat, though this does not change the number you can have prepared.")} though you may only prepare three as a precombat preparation to begin with. These are combat techniques and coordinated maneuvers you can instruct your allies in, enabling them to respond to your signals in combat. As you increase in level, you gain the ability to learn more potent tactics.\n\n" +
                 "{b}3. Drilled Reactions{/b} Your time spent training with your allies allows them to respond quickly and instinctively to your commands. Once per round when you use a tactic, you can grant one ally of your choice benefiting from that tactic an extra reaction. This reaction has to be used for that tactic and is lost if not used.\n\n" +
                 "{b}4. Shield Block {icon:Reaction}.{/b} You gain the Shield Block general feat.\n\n" +
                 "{b}5. Commander feat.{/b}",
@@ -214,6 +215,48 @@ public abstract partial class Commander
                 });
                 cr.AddQEffect(new QEffect()
                 {
+                    ProvideActionIntoPossibilitySection = (_, section) =>
+                    {
+                        SubmenuPossibility signalToggle = new(new SideBySideIllustration(MIllustrations.Visual, MIllustrations.Auditory), "Signal Toggle")
+                        {
+                            SubmenuId = MSubmenuIds.SignalToggle
+                        };
+                        return section.PossibilitySectionId == MPossibilitySectionIds.Toggle ?  signalToggle : null;
+                    },
+                    StartOfCombat = _ =>
+                    {
+                        cr.AddQEffect(new QEffect("Audible Tactics", "Your tactics gain the Auditory trait.") { Id = MQEffectIds.AudibleTactics });
+                        return Task.CompletedTask;
+                    }
+                });
+                cr.AddQEffect(new QEffect()
+                {
+                    ProvideSectionIntoSubmenu = (_, possibility) => possibility.SubmenuId == MSubmenuIds.SignalToggle
+                        ? new PossibilitySection("Visual").WithPossibilitySectionId(MPossibilitySectionIds
+                            .VisualTactics)
+                        : null
+                });
+                cr.AddQEffect(new QEffect()
+                {
+                    ProvideActionIntoPossibilitySection = (_, section) => section.PossibilitySectionId == MPossibilitySectionIds.VisualTactics
+                        ? new ActionPossibility(VisualTactics(cr))
+                        : null
+                });
+                cr.AddQEffect(new QEffect()
+                {
+                    ProvideSectionIntoSubmenu = (_, possibility) => possibility.SubmenuId == MSubmenuIds.SignalToggle
+                        ? new PossibilitySection("Audible").WithPossibilitySectionId(MPossibilitySectionIds
+                            .AuditoryTactics)
+                        : null
+                });
+                cr.AddQEffect(new QEffect()
+                {
+                    ProvideActionIntoPossibilitySection = (_, section) => section.PossibilitySectionId == MPossibilitySectionIds.AuditoryTactics
+                        ? new ActionPossibility(AudibleTactics(cr))
+                        : null
+                });
+                cr.AddQEffect(new QEffect()
+                {
                     ProvideSectionIntoSubmenu = (_, possibility) => possibility.SubmenuId == MSubmenuIds.Commander
                         ? new PossibilitySection("Mobility").WithPossibilitySectionId(MPossibilitySectionIds
                             .MobilityTactics)
@@ -229,7 +272,7 @@ public abstract partial class Commander
                 cr.AddQEffect(new QEffect()
                 {
                     ProvideSectionIntoSubmenu = (_, possibility) => possibility.SubmenuId == MSubmenuIds.Commander
-                        ? new PossibilitySection("Expert Tactics").WithPossibilitySectionId(MPossibilitySectionIds
+                        ? new PossibilitySection("Expert").WithPossibilitySectionId(MPossibilitySectionIds
                             .ExpertTactics)
                         : null
                 });
@@ -242,9 +285,7 @@ public abstract partial class Commander
                 });
                 cr.AddQEffect(new QEffect()
                 {
-                    ProvideActionIntoPossibilitySection = (_, section) => section.PossibilitySectionId ==
-                                                                          MPossibilitySectionIds
-                                                                              .Toggle
+                    ProvideActionIntoPossibilitySection = (_, section) => section.PossibilitySectionId == MPossibilitySectionIds.Toggle
                         ? new ActionPossibility(ChooseDrilledReactions(cr))
                         : null
                 });
@@ -268,7 +309,7 @@ public abstract partial class Commander
                     cr.AddQEffect(new QEffect("Warfare Expertise",
                         "As long as at least one enemy is visible at the start of an encounter, you can roll Warfare Lore in place of Perception for initiative. " +
                         "{i}Special{/i} If you have DawnniEx installed, you use Warfare Lore for all " +
-                        CreateTooltips("Recall Weakness", FeatRecallWeakness.RecallWeaknessAction(cr).Name+"\n{i}Skill{/i}\n\n"+FeatRecallWeakness.RecallWeaknessAction(cr).Description) +
+                        CreateTooltips("Recall Weakness", "{b}Recall Weakness {icon:Action}{/b}"+"\n{i}Skill{/i}\n\n"+FeatRecallWeakness.RecallWeaknessAction(cr).Description) +
                         " actions if your Warfare Lore is better than the original skill check.")
                     {
                         StartOfCombat = _ =>
@@ -670,6 +711,30 @@ public abstract partial class Commander
                 await hey.ChosenOption.Action();
             });
         return choiceAction;
+    }
+
+    private static CombatAction AudibleTactics(Creature owner)
+    {
+        return new CombatAction(owner,MIllustrations.Auditory, "Audible Tactics", [Trait.Basic, Trait.DoesNotBreakStealth, Trait.DoNotShowOverheadOfActionName],
+            "You use audible signals to communicate your tactics to your allies.", Target.Self().WithAdditionalRestriction(cr => cr.HasEffect(MQEffectIds.AudibleTactics) ? "Your tactics are already audible." : null))
+            .WithActionCost(0)
+            .WithEffectOnSelf(self =>
+            {
+                self.RemoveAllQEffects(qf => qf.Id == MQEffectIds.VisualTactics);
+                self.AddQEffect(new QEffect("Audible Tactics", "Your tactics gain the Auditory trait.") { Id = MQEffectIds.AudibleTactics });
+            });
+    }
+    
+    private static CombatAction VisualTactics(Creature owner)
+    {
+        return new CombatAction(owner,MIllustrations.Visual, "Visual Tactics", [Trait.Basic, Trait.DoesNotBreakStealth, Trait.DoNotShowOverheadOfActionName],
+                "You use visual signals to communicate your tactics to your allies.", Target.Self().WithAdditionalRestriction(cr => cr.HasEffect(MQEffectIds.VisualTactics) ? "Your tactics are already visual." : null))
+            .WithActionCost(0)
+            .WithEffectOnSelf(self =>
+            {
+                self.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AudibleTactics);
+                self.AddQEffect(new QEffect("Visual Tactics", "Your tactics gain the Visual trait.") { Id = MQEffectIds.VisualTactics });
+            });
     }
 
     private static Creature? DrilledTarget(ChosenTargets targets, Creature commander)

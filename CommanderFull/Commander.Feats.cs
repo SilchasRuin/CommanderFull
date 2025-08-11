@@ -1175,13 +1175,13 @@ public abstract partial class Commander
     private static void ShieldedRecoveryLogic(TrueFeat feat)
     {
         feat.WithPrerequisite(ModData.MFeatNames.OfficerMedic, "Officer's Medical Training").WithPermanentQEffect(
-            "You can use the same hand you are using to wield a shield to Treat Wounds or use Battle Medicine, and you are considered to have a hand free for other uses of Medicine as long as the only thing you are holding or wielding in that hand is a shield. When you use Battle Medicine on an ally while wielding a shield, they gain a +1 circumstance bonus to AC and Reflex saves that lasts until the start of your next turn or until they are no longer adjacent to you, whichever comes first.",
+            "You can use the same hand you are using to wield a shield to use Battle Medicine. When you use Battle Medicine on an ally while wielding a shield, they gain a +1 circumstance bonus to AC and Reflex saves that lasts until the start of your next turn or until they are no longer adjacent to you, whichever comes first.",
             qf =>
             {
                 Creature self = qf.Owner;
                 qf.AfterYouTakeActionAgainstTarget = (_, action, ally, _) =>
                 {
-                    if (!ally.FriendOfAndNotSelf(self) || !action.Name.Contains("Battle Medicine"))
+                    if (!ally.FriendOfAndNotSelf(self) || !action.Name.Contains("Battle Medicine") || !self.HeldItems.Any(item => item.HasTrait(Trait.Shield)))
                         return Task.CompletedTask;
                     ally.AddQEffect(new QEffect("Shielded Recovery",
                         "You gain a +1 circumstance bonus to AC and Reflex saves as long as you are adjacent to " +

@@ -20,6 +20,7 @@ using Dawnsbury.Modding;
 using Dawnsbury.Mods.DawnniExpanded;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
+using static CommanderFull.ModData;
 
 namespace CommanderFull;
 
@@ -39,12 +40,12 @@ public class ModLoader
         Commander.LoadGenericFeats();
         AllFeats.GetFeatByFeatName(FeatName.LengthyDiversion).Prerequisites
             .RemoveAll(req => req.Description.Contains("trained in Deception"));
-        AllFeats.GetFeatByFeatName(FeatName.LengthyDiversion).WithPrerequisite(values => values.GetProficiency(Trait.Deception) >= Proficiency.Trained || (values.HasFeat(ModData.MFeatNames.DeceptiveTactics) && values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Trained), "You must be trained in Deception.");
+        AllFeats.GetFeatByFeatName(FeatName.LengthyDiversion).WithPrerequisite(values => values.GetProficiency(Trait.Deception) >= Proficiency.Trained || (values.HasFeat(MFeatNames.DeceptiveTactics) && values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Trained), "You must be trained in Deception.");
         AllFeats.GetFeatByFeatName(FeatName.Confabulator).Prerequisites.Remove(AllFeats.GetFeatByFeatName(FeatName.Confabulator).Prerequisites.FirstOrDefault(pre => pre.Description == "You must be expert in Deception.")!);
-        AllFeats.GetFeatByFeatName(FeatName.Confabulator).WithPrerequisite(values => values.GetProficiency(Trait.Deception) >= Proficiency.Expert || (values.HasFeat(ModData.MFeatNames.DeceptiveTactics) && values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Expert), "You must be expert in Deception.");
+        AllFeats.GetFeatByFeatName(FeatName.Confabulator).WithPrerequisite(values => values.GetProficiency(Trait.Deception) >= Proficiency.Expert || (values.HasFeat(MFeatNames.DeceptiveTactics) && values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Expert), "You must be expert in Deception.");
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
-            if (!action.Owner.HasEffect(ModData.MQEffectIds.ProtectiveScreenQf)) return;
+            if (!action.Owner.HasEffect(MQEffectIds.ProtectiveScreenQf)) return;
             if ((action.HasTrait(Trait.Ranged) && action.HasTrait(Trait.Attack)) || action.SpellInformation != null)
             {
                 action.Traits.Add(Trait.DoesNotProvoke);
@@ -56,13 +57,13 @@ public class ModLoader
             {
                 cr.AddQEffect(new QEffect()
                 {
-                    ProvideActionIntoPossibilitySection = (qf, possibility) => possibility.PossibilitySectionId == PossibilitySectionId.AttackManeuvers ? new ActionPossibility(Commander.Reposition(qf.Owner), PossibilitySize.Half) : null
+                    ProvideActionIntoPossibilitySection = (qf, possibility) => possibility.PossibilitySectionId == PossibilitySectionId.AttackManeuvers ? new ActionPossibility(Commander.Reposition(qf.Owner)) : null
                 });
             });
         }
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
-            if (!action.Owner.HasFeat(ModData.MFeatNames.DeceptiveTactics) ||
+            if (!action.Owner.HasFeat(MFeatNames.DeceptiveTactics) ||
                 action.ActionId != ActionId.CreateADiversion) return;
             Creature self = action.Owner;
             action.Description =
@@ -169,7 +170,11 @@ public class ModLoader
         });
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
-            if (action.HasTrait(ModData.MTraits.Brandish)) action.Traits.Add(Trait.Visual);
+            if (action.HasTrait(MTraits.Brandish)) action.Traits.Add(Trait.Visual);
+            if (action.HasTrait(MTraits.Tactic) && !action.HasTrait(MTraits.Brandish) && action.Owner.HasEffect(MQEffectIds.AudibleTactics))
+                action.Traits.Add(Trait.Auditory);
+            if (action.HasTrait(MTraits.Tactic) && !action.HasTrait(MTraits.Brandish) && action.Owner.HasEffect(MQEffectIds.VisualTactics))
+                action.Traits.Add(Trait.Visual);
             if (action.Name != "Recall Weakness") return;
             action.Illustration= IllustrationName.NarratorBook;
         });
@@ -180,7 +185,7 @@ public class ModLoader
                 //AllFeats.GetFeatByFeatName(goadingFeat).Prerequisites.Remove(AllFeats.GetFeatByFeatName(goadingFeat).Prerequisites.FirstOrDefault(pre => pre.Description == "You must be trained in Deception.")!);
                 AllFeats.GetFeatByFeatName(goadingFeat).WithPrerequisite(
                     values => values.GetProficiency(Trait.Deception) >= Proficiency.Trained ||
-                              (values.HasFeat(ModData.MFeatNames.DeceptiveTactics) &&
+                              (values.HasFeat(MFeatNames.DeceptiveTactics) &&
                                values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >=
                                Proficiency.Trained), "You must be trained in Deception.");
             }
@@ -192,7 +197,7 @@ public class ModLoader
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
             if (!action.Name.Contains("Battle Medicine")) return;
-            if (!action.Owner.HasFeat(ModData.MFeatNames.ShieldedRecovery)) return;
+            if (!action.Owner.HasFeat(MFeatNames.ShieldedRecovery)) return;
             Creature self = action.Owner;
             bool medic = self.HasEffect(QEffectId.Medic);
             action.Target = Target.AdjacentFriendOrSelf().WithAdditionalConditionOnTargetCreature(
@@ -216,7 +221,7 @@ public class ModLoader
             new CreatureStatblockSectionGenerator("Prepared tactics", TacticsStatBlock.DescribePreparedTactics));
         LoadOrder.AtEndOfLoadingSequence += () =>
         {
-            Feat? commanderClass = AllFeats.All.FirstOrDefault(ft => ft.FeatName == ModData.MFeatNames.Commander);
+            Feat? commanderClass = AllFeats.All.FirstOrDefault(ft => ft.FeatName == MFeatNames.Commander);
             commanderClass!.RulesText = commanderClass.RulesText.Replace("Ability boosts", "Attribute boosts");
             Feat? battlePlanner = AllFeats.All.FirstOrDefault(feat => feat.FeatName == ExplorationActivities.ModData.FeatNames.BattlePlanner);
             if (battlePlanner != null)
