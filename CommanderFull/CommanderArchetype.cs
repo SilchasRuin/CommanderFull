@@ -335,7 +335,7 @@ public class CommanderArchetype
                     }
                 };
             })
-            .WithPrerequisite(values => // Can't use the built-in WithDemandsAbility, to avoid non-ORC text.
+            .WithPrerequisite(values =>
                     values.FinalAbilityScores.TotalScore(Ability.Intelligence) >= 14,
                 "You must have Intelligence +2 or more.");
         foreach (Feat feat in ArchetypeFeats.CreateBasicAndAdvancedMulticlassFeatGrantingArchetypeFeats(MTraits.Commander, "Field Training"))
@@ -352,7 +352,7 @@ public class CommanderArchetype
                 var myOption = values.SelectionOptions
                     .FirstOrDefault(option => option.Name == "Prepared Tactics") as MultipleFeatSelectionOption;
                 if (myOption == null) return;
-                FieldInfo? maxOptions = typeof(MultipleFeatSelectionOption)
+                FieldInfo? maxOptions  = typeof(MultipleFeatSelectionOption)
                     .GetField("<MaximumNumberOfOptions>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
                 if (maxOptions == null) return;
                 maxOptions.SetValue(myOption, 2);

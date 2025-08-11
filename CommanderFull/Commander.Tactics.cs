@@ -19,6 +19,7 @@ using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Core.Tiles;
 using Dawnsbury.Modding;
+using static CommanderFull.ModData;
 
 namespace CommanderFull;
 
@@ -26,168 +27,168 @@ public abstract partial class Commander
 {
     public static IEnumerable<Feat> LoadTactics()
     {
-        yield return new ActionFeat(ModData.MFeatNames.GatherToMe,
+        yield return new ActionFeat(MFeatNames.GatherToMe,
             "You signal your team to move into position together.",
             "Signal all squadmates; each can immediately Stride as a reaction, though each must end their movement inside your banner’s aura, or as close to your banner's aura as their movement Speed allows.",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.MobilityTactic]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.DefensiveRetreat, "You call for a careful retreat.",
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.MobilityTactic]).WithActionCost(1);
+        yield return new ActionFeat(MFeatNames.DefensiveRetreat, "You call for a careful retreat.",
             "Signal all squadmates within the aura of your commander's banner; each can immediately Step up to three times as a free action. Each Step must take them farther away from at least one hostile creature they are observing and can only take them closer to a hostile creature if doing so is the only way for them to move toward safety.",
             [
-                ModData.MTraits.Tactic, ModData.MTraits.Brandish, ModData.MTraits.BasicTactic,
-                ModData.MTraits.MobilityTactic
+                MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
+                MTraits.MobilityTactic
             ]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.NavalTraining,
+        yield return new ActionFeat(MFeatNames.NavalTraining,
             "Your instructions make it easier for you and your allies to swim through dangerous waters.",
             "Signal all squadmates; until the end of your next turn, each squadmate gains a swim Speed.",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.MobilityTactic]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.PassageOfLines,
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.MobilityTactic]).WithActionCost(1);
+        yield return new ActionFeat(MFeatNames.PassageOfLines,
             "You command your allies to regroup, allowing endangered units to fall back while rested units press the advantage.",
             "Signal all squadmates within the aura of your commander's banner; each can swap positions with another willing ally adjacent to them.",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.MobilityTactic]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.ProtectiveScreen,
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.MobilityTactic]).WithActionCost(1);
+        yield return new ActionFeat(MFeatNames.ProtectiveScreen,
             "You've trained your allies in a technique designed to protect war mages.",
             "Signal one squadmate; as a reaction, that squadmate Strides directly toward any other squadmate who is within the aura of your banner. If the first squadmate ends their movement adjacent to that squadmate, that squadmate does not trigger reactions when casting spells or making ranged attacks until the end of their next turn or until they are no longer adjacent to the first squadmate, whichever comes first.",
             [
-                ModData.MTraits.Tactic, ModData.MTraits.Brandish, ModData.MTraits.BasicTactic,
-                ModData.MTraits.MobilityTactic
+                MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
+                MTraits.MobilityTactic
             ]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.PincerAttack,
+        yield return new ActionFeat(MFeatNames.PincerAttack,
             "You signal an aggressive formation designed to exploit enemies' vulnerabilities.",
             "Signal all squadmates affected by your commander's banner; each can Step as a free action. If any of your allies end this movement adjacent to an opponent, that opponent is off-guard to melee attacks from you and all other squadmates who responded to Pincer Attack until the start of your next turn.",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.OffensiveTactic]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.StrikeHard, "You command an ally to attack.",
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(1);
+        yield return new ActionFeat(MFeatNames.StrikeHard, "You command an ally to attack.",
             "Choose a squadmate who can see or hear your signal. That ally immediately attempts a Strike as a reaction.",
             [
-                ModData.MTraits.Tactic, ModData.MTraits.Brandish, ModData.MTraits.BasicTactic,
-                ModData.MTraits.OffensiveTactic
+                MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
+                MTraits.OffensiveTactic
             ]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.CoordinatingManeuvers,
+        yield return new ActionFeat(MFeatNames.CoordinatingManeuvers,
             "Your team works to slip enemies into a disadvantageous position.",
             $"Signal one squadmate within the aura of your banner; that squadmate can immediately Step as a free action. If they end this movement next to an opponent, they can attempt to {UseCreatedTooltip("Reposition")} that target as a reaction.",
             [
-                ModData.MTraits.Tactic, ModData.MTraits.Brandish, ModData.MTraits.BasicTactic,
-                ModData.MTraits.OffensiveTactic
+                MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
+                MTraits.OffensiveTactic
             ]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.DoubleTeam,
+        yield return new ActionFeat(MFeatNames.DoubleTeam,
             "Your team works together to set an enemy up for a vicious attack.",
             $"Signal one squadmate who has an opponent within their reach. That ally can Shove or {UseCreatedTooltip("Reposition")} an opponent as a free action. If their maneuver is successful and the target ends their movement adjacent to a different squadmate, the second squadmate can attempt a melee Strike against that target as a reaction.",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.OffensiveTactic]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.EndIt,
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(2);
+        yield return new ActionFeat(MFeatNames.EndIt,
             "At your proclamation that victory is already at hand, your allies march forward with an authoritative stomp, scattering your enemies in terror.",
             "If you and your allies outnumber all enemies on the battlefield, and you or a squadmate have reduced an enemy to 0 Hit Points since the start of your last turn, you may signal all squadmates within the aura of your banner; you and each ally can Step as a free action directly toward a hostile creature. Any hostile creatures within 10 feet of a squadmate after this movement must attempt a Will save against your class DC; on a failure they become fleeing for 1 round, and on a critical failure they become fleeing for 1 round and frightened 2. This is an emotion, fear, and mental effect.",
             [
-                ModData.MTraits.Tactic, ModData.MTraits.Brandish, Trait.Incapacitation, ModData.MTraits.BasicTactic,
-                ModData.MTraits.OffensiveTactic
+                MTraits.Tactic, MTraits.Brandish, Trait.Incapacitation, MTraits.BasicTactic,
+                MTraits.OffensiveTactic
             ]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.Reload,
+        yield return new ActionFeat(MFeatNames.Reload,
             "Your drill instruction kicks in, and your allies rapidly reload their weapons to prepare for the next volley.",
             "Signal all squadmates; each can immediately Interact to reload as a reaction.",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.OffensiveTactic]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.ShieldsUp, "You signal your allies to ready their defenses.",
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(1);
+        yield return new ActionFeat(MFeatNames.ShieldsUp, "You signal your allies to ready their defenses.",
             "Signal all squadmates within the aura of your commander’s banner; each can immediately Raise a Shield as a reaction. Squadmates who have a parry action (whether from a Parry weapon or a Feat such as Dueling Parry or Twin Parry) may use that instead.\n\n{b}Special{/b} If one of your squadmates knows or has prepared the shield cantrip, they can cast it as a reaction instead of taking the actions normally granted by this tactic.",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.OffensiveTactic]).WithActionCost(1);
-        yield return new ActionFeat(ModData.MFeatNames.TacticalTakedown,
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(1);
+        yield return new ActionFeat(MFeatNames.TacticalTakedown,
             "You direct a coordinated maneuver that sends an enemy tumbling down.",
             "Signal up to two squadmates within the aura of your commander’s banner. Each of those allies can Stride up to half their Speed as a reaction. If they both end this movement adjacent to an enemy, that enemy must succeed at a Reflex save against your class DC or fall prone.\n",
-            [ModData.MTraits.Tactic, ModData.MTraits.BasicTactic, ModData.MTraits.OffensiveTactic]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.DemoralizingCharge,
+            [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(2);
+        yield return new ActionFeat(MFeatNames.DemoralizingCharge,
             "Your team’s coordinated assault strikes fear into your enemies’ hearts.",
             "Signal up to two squadmates within the aura of your commander’s banner; as a free action, those squadmates can immediately Stride toward an enemy they are observing. If they end this movement adjacent to an enemy, they can attempt to Strike that enemy as a reaction. For each of these Strikes that are successful, the target enemy must succeed at a Will save against your class DC or become frightened 1 (frightened 2 on a critical failure); this is an emotion, fear, and mental effect. If both Strikes target the same enemy, that enemy attempts the save only once after the final attack and takes a –1 circumstance penalty to their Will save to resist this effect (this penalty increases to –2 if both Strikes are successful or to –3 if both Strikes are successful and either is a critical hit).",
-            [ModData.MTraits.Tactic, ModData.MTraits.ExpertTactic, ModData.MTraits.Brandish]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.BuckleCutBlitz,
+            [MTraits.Tactic, MTraits.ExpertTactic, MTraits.Brandish]).WithActionCost(2);
+        yield return new ActionFeat(MFeatNames.BuckleCutBlitz,
             "Your squad dashes past enemies, slicing their boot laces and breaking their belt buckles.",
             "Signal up to two squadmates within the aura of your commander’s banner; these squadmates can Stride up to their Speed as a reaction. Each enemy they are adjacent to at any point during this movement must attempt a Reflex save against your class DC or become clumsy 1 for 1 round (clumsy 2 on a critical failure).",
-            [ModData.MTraits.Tactic, ModData.MTraits.ExpertTactic, ModData.MTraits.Brandish]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.StupefyingRaid,
+            [MTraits.Tactic, MTraits.ExpertTactic, MTraits.Brandish]).WithActionCost(2);
+        yield return new ActionFeat(MFeatNames.StupefyingRaid,
             "Your team dashes about in a series of maneuvers that leave the enemy befuddled.",
             "Signal up to two squadmates within the aura of your commander’s banner; these squadmates can Stride up to their Speed as a reaction. Each enemy they are adjacent to at any point during this movement must attempt a Will save against your class DC or become stupefied 1 for 1 round (stupefied 2 on a critical failure); this is a mental effect.",
-            [ModData.MTraits.Tactic, ModData.MTraits.ExpertTactic, ModData.MTraits.Brandish]).WithActionCost(2);
-        yield return new ActionFeat(ModData.MFeatNames.SlipAndSizzle,
+            [MTraits.Tactic, MTraits.ExpertTactic, MTraits.Brandish]).WithActionCost(2);
+        yield return new ActionFeat(MFeatNames.SlipAndSizzle,
             "Your team executes a brutal technique designed to knock down an opponent and blast them with magical devastation.",
             "Signal up to two squadmates within the aura of your commander’s banner; one of these squadmates must be adjacent to an opponent and the other must be capable of casting a spell that deals damage. The first squadmate can attempt to Trip the adjacent opponent as a reaction. If this Trip is successful, the second squadmate can cast a ranged spell that deals damage and takes 2 or fewer actions to cast. This spell is cast as a reaction and must either target the tripped opponent or include the tripped opponent in the spell’s area.\n\nIf the second squadmate cast a spell using slots or Focus Points as part of this tactic, they are slowed 1 until the end of their next turn and do not gain a reaction when they regain actions at the start of their next turn." +
             "\n{b}Note{/b} Spells with variants, for example: Magic Missile or Scorching Ray, cannot be cast at this time.",
-            [ModData.MTraits.Tactic, ModData.MTraits.ExpertTactic]).WithActionCost(2);
+            [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(2);
     }
 
     private static IEnumerable<QEffect> TacticsQFs(Creature cr)
     {
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.GatherToMe,
+            Tag = MFeatNames.GatherToMe,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.MobilityTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.MobilityTactics
                     ? new ActionPossibility(GatherToMe(cr))
                     : null,
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.DefensiveRetreat,
+            Tag = MFeatNames.DefensiveRetreat,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.MobilityTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.MobilityTactics
                     ? new ActionPossibility(DefensiveRetreat(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.NavalTraining,
+            Tag = MFeatNames.NavalTraining,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.MobilityTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.MobilityTactics
                     ? new ActionPossibility(NavalTraining(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.PassageOfLines,
+            Tag = MFeatNames.PassageOfLines,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.MobilityTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.MobilityTactics
                     ? new ActionPossibility(PassageOfLines(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.ProtectiveScreen,
+            Tag = MFeatNames.ProtectiveScreen,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.MobilityTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.MobilityTactics
                     ? new ActionPossibility(ProtectiveScreen(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.PincerAttack,
+            Tag = MFeatNames.PincerAttack,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(PincerAttack(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.StrikeHard,
+            Tag = MFeatNames.StrikeHard,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(StrikeHard(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.CoordinatingManeuvers,
+            Tag = MFeatNames.CoordinatingManeuvers,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(CoordinatingManeuvers(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.DoubleTeam,
+            Tag = MFeatNames.DoubleTeam,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(DoubleTeam(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.EndIt,
+            Tag = MFeatNames.EndIt,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(EndIt(cr))
                     : null,
             StartOfYourPrimaryTurn = (effect, _) =>
@@ -200,7 +201,7 @@ public abstract partial class Commander
                         {
                             Source = effect.Owner,
                             Value = 2,
-                            Id = ModData.MQEffectIds.DeathCounter
+                            Id = MQEffectIds.DeathCounter
                         });
                         return Task.CompletedTask;
                     };
@@ -210,57 +211,57 @@ public abstract partial class Commander
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.Reload,
+            Tag = MFeatNames.Reload,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(Reload(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.PincerAttack,
+            Tag = MFeatNames.PincerAttack,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(ShieldsUp(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.TacticalTakedown,
+            Tag = MFeatNames.TacticalTakedown,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.OffensiveTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(TacticalTakedown(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.DemoralizingCharge,
+            Tag = MFeatNames.DemoralizingCharge,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.ExpertTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.ExpertTactics
                     ? new ActionPossibility(DemoralizingCharge(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.BuckleCutBlitz,
+            Tag = MFeatNames.BuckleCutBlitz,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.ExpertTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.ExpertTactics
                     ? new ActionPossibility(BuckleCutBlitz(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.StupefyingRaid,
+            Tag = MFeatNames.StupefyingRaid,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.ExpertTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.ExpertTactics
                     ? new ActionPossibility(StupefyingRaid(cr))
                     : null
         };
         yield return new QEffect
         {
-            Tag = ModData.MFeatNames.SlipAndSizzle,
+            Tag = MFeatNames.SlipAndSizzle,
             ProvideActionIntoPossibilitySection = (_, section) =>
-                section.PossibilitySectionId == ModData.MPossibilitySectionIds.ExpertTactics
+                section.PossibilitySectionId == MPossibilitySectionIds.ExpertTactics
                     ? new ActionPossibility(SlipAndSizzle(cr))
                     : null
         };
@@ -271,8 +272,8 @@ public abstract partial class Commander
     private static CombatAction GatherToMe(Creature owner)
     {
         List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.GatherToMe, "Gather to Me!",
-                [ModData.MTraits.Tactic, ModData.MTraits.Commander, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.GatherToMe, "Gather to Me!",
+                [MTraits.Tactic, MTraits.Commander, Trait.Basic],
                 "Signal all squadmates; each can immediately Stride as a reaction, though each must end their movement inside your banner’s aura or as close to your banner's aura as their movement Speed allows.",
                 squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr))
                     ? AllSquadmateTarget(owner)
@@ -281,13 +282,11 @@ public abstract partial class Commander
             .WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (_, caster, targets) =>
             {
-                Creature? drilledTarget =
-                    targets.ChosenCreatures.Find(cr => cr.HasEffect(ModData.MQEffectIds.DrilledTarget)) ??
-                    targets.ChosenCreatures.FirstOrDefault();
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 Creature? bannerHolder = caster.Battle.AllCreatures.FirstOrDefault(cr => IsMyBanner(caster, cr));
                 Tile? bannerTile = caster.Battle.Map.AllTiles.FirstOrDefault(tile => IsMyBanner(caster, tile));
                 bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 bool usedDrill = false;
                 bool lostReaction = false;
                 bool animalReact = false;
@@ -301,14 +300,14 @@ public abstract partial class Commander
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                         usedDrill = true;
                     }
-                    else if (!bannerHolder.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (!bannerHolder.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         bannerHolder.Actions.UseUpReaction();
                         lostReaction = true;
                     }
-                    else if (bannerHolder.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (bannerHolder.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        bannerHolder.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        bannerHolder.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                         animalReact = true;
                     }
 
@@ -319,7 +318,7 @@ public abstract partial class Commander
                     else
                     {
                         if (usedDrill)
-                            caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                            caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                         if (lostReaction)
                             bannerHolder.Actions.RefundReaction();
                         if (animalReact)
@@ -329,7 +328,7 @@ public abstract partial class Commander
 
                 foreach (Creature target in targets.ChosenCreatures.Where(c => c != bannerHolder))
                 {
-                    useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Name != "Drilled Reactions Expended");
+                    useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                     bool usedDrill2 = false;
                     bool lostReaction2 = false;
                     bool animalReact2 = false;
@@ -345,14 +344,14 @@ public abstract partial class Commander
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                         usedDrill2 = true;
                     }
-                    else if (!target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (!target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                         lostReaction2 = true;
                     }
-                    else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                         animalReact2 = true;
                     }
 
@@ -374,7 +373,11 @@ public abstract partial class Commander
                         ?.WithActionCost(0);
                     List<Tile> floodFill = Pathfinding.Floodfill(target, target.Battle, new PathfindingDescription()
                         {
-                            Squares = target.Speed
+                            Squares = target.Speed,
+                            Style =
+                            {
+                                PermitsStep = false
+                            }
                         })
                         .Where(tile =>
                             tile.LooksFreeTo(target) && ((bannerHolder != null &&
@@ -417,7 +420,7 @@ public abstract partial class Commander
                     {
                         case CancelOption:
                             if (usedDrill2)
-                                caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                                caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                             if (lostReaction2)
                                 target.Actions.RefundReaction();
                             if (animalReact2)
@@ -440,8 +443,8 @@ public abstract partial class Commander
             owner.Battle.AllCreatures.Where(cr => cr.EnemyOf(owner) && owner.CanSee(cr)).ToList();
         List<Creature> squadmates =
             owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr) && cr != owner).ToList();
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.Retreat, "Defensive Retreat",
-                [ModData.MTraits.Tactic, ModData.MTraits.Commander, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.Retreat, "Defensive Retreat",
+                [MTraits.Tactic, MTraits.Commander, Trait.Basic],
                 "Signal all squadmates within the aura of your banner; each can immediately Step up to three times as a free action. Each Step must take them farther away from at least one hostile creature they are observing and can only take them closer to a hostile creature if doing so is the only way for them to move toward safety.",
                 squadmates.Any(cr =>
                     new BrandishRequirement().Satisfied(owner, cr) == Usability.Usable && possibles.Count > 0)
@@ -524,7 +527,7 @@ public abstract partial class Commander
                                 break;
                             case TileOption tileOption:
                                 await tileOption.Action();
-                                if (!target.HasEffect(ModData.MQEffectIds.TacticResponse))
+                                if (!target.HasEffect(MQEffectIds.TacticResponse))
                                     target.AddQEffect(RespondedToTactic(caster));
                                 break;
                         }
@@ -537,14 +540,14 @@ public abstract partial class Commander
     private static CombatAction NavalTraining(Creature owner)
     {
         CombatAction tactic = new CombatAction(owner, IllustrationName.WaterWalk, "Naval Training",
-                [ModData.MTraits.Tactic, Trait.Basic, ModData.MTraits.Commander],
+                [MTraits.Tactic, Trait.Basic, MTraits.Commander],
                 "Signal all squadmates; until the end of your next turn, all squadmates gain a swim Speed.",
                 AllSquadmateTarget(owner))
             .WithActionCost(1)
             .WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnEachTarget((_, caster, target, _) =>
             {
-                if (target.HasEffect(ModData.MQEffectIds.TacticResponse)) return Task.CompletedTask;
+                if (target.HasEffect(MQEffectIds.TacticResponse)) return Task.CompletedTask;
                 target.AddQEffect(new QEffect("Naval Training", "You have a swim speed.",
                     ExpirationCondition.ExpiresAtEndOfSourcesTurn, owner, IllustrationName.WaterWalk)
                 {
@@ -559,14 +562,14 @@ public abstract partial class Commander
 
     private static CombatAction PassageOfLines(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.PassageOfLines, "Passage of Lines",
-                [Trait.Basic, ModData.MTraits.Tactic, ModData.MTraits.Commander],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.PassageOfLines, "Passage of Lines",
+                [Trait.Basic, MTraits.Tactic, MTraits.Commander],
                 "Signal all squadmates within the aura of your commander's banner; each can swap positions with another willing ally adjacent to them.",
                 AllSquadmateInBannerTarget(owner))
             .WithActionCost(1).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnEachTarget(async (_, caster, target, _) =>
             {
-                CombatAction swap = new CombatAction(target, ModData.MIllustrations.PassageOfLines, "Swap",
+                CombatAction swap = new CombatAction(target, MIllustrations.PassageOfLines, "Swap",
                         [Trait.Basic, Trait.Move], "You switch places with an ally.", Target.AdjacentFriend()
                             .WithAdditionalConditionOnTargetCreature((creature, creature1) =>
                                 CommonCombatActions.StepByStepStride(creature1).WithActionCost(0)
@@ -611,8 +614,8 @@ public abstract partial class Commander
 
     private static CombatAction ProtectiveScreen(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.ProtectiveScreen, "Protective Screen",
-                [Trait.Basic, ModData.MTraits.Commander, ModData.MTraits.Tactic, ModData.MTraits.Brandish],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.ProtectiveScreen, "Protective Screen",
+                [Trait.Basic, MTraits.Commander, MTraits.Tactic, MTraits.Brandish],
                 "Signal one squadmate; as a reaction, that squadmate Strides directly toward any other squadmate who is within the aura of your banner. If the first squadmate ends their movement adjacent to that squadmate, that squadmate does not trigger reactions when casting spells or making ranged attacks until the end of their next turn or until they are no longer adjacent to the first squadmate, whichever comes first.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
@@ -629,7 +632,7 @@ public abstract partial class Commander
             .WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnEachTarget(async (spell, caster, target, _) =>
             {
-                CombatAction screenStride = new CombatAction(target, ModData.MIllustrations.ProtectiveScreen,
+                CombatAction screenStride = new CombatAction(target, MIllustrations.ProtectiveScreen,
                         "Screen Stride",
                         [Trait.Basic, Trait.DoNotShowInCombatLog, Trait.DoNotShowOverheadOfActionName],
                         "Stride towards an ally, adds a buff to that ally if end adjacent.",
@@ -648,9 +651,9 @@ public abstract partial class Commander
                             target1.AddQEffect(new QEffect("Protective Screen",
                                 "Your spells and ranged attacks do not provoke reactions until the end of your turn or until you are no longer adjacent to the original squadmate, whichever comes first.",
                                 ExpirationCondition.ExpiresAtEndOfYourTurn, owner,
-                                ModData.MIllustrations.ProtectiveScreen)
+                                MIllustrations.ProtectiveScreen)
                             {
-                                Id = ModData.MQEffectIds.ProtectiveScreenQf,
+                                Id = MQEffectIds.ProtectiveScreenQf,
                                 StateCheckWithVisibleChanges = effect =>
                                 {
                                     if (!target1.IsAdjacentTo(self))
@@ -661,7 +664,7 @@ public abstract partial class Commander
                         }
                     });
                 bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 bool usedDrill = false;
                 bool lostReaction = false;
                 bool animalReact = false;
@@ -672,14 +675,14 @@ public abstract partial class Commander
                 }
 
                 target.AddQEffect(RespondedToTactic(caster));
-                if (!useDrilledReactions && !target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                if (!useDrilledReactions && !target.HasEffect(MQEffectIds.AnimalReaction))
                 {
                     target.Actions.UseUpReaction();
                     lostReaction = true;
                 }
-                else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                else if (target.HasEffect(MQEffectIds.AnimalReaction))
                 {
-                    target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                    target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                     animalReact = true;
                 }
 
@@ -698,7 +701,7 @@ public abstract partial class Commander
                     case CancelOption:
                         spell.RevertRequested = true;
                         if (usedDrill)
-                            caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                            caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                         if (lostReaction)
                             target.Actions.RefundReaction();
                         if (animalReact)
@@ -716,8 +719,8 @@ public abstract partial class Commander
     {
         List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
         List<Creature> includedAllies = [];
-        CombatAction pincerAttack = new CombatAction(owner, ModData.MIllustrations.PincerAttack,
-                "Pincer Attack", [ModData.MTraits.Commander, ModData.MTraits.Tactic],
+        CombatAction pincerAttack = new CombatAction(owner, MIllustrations.PincerAttack,
+                "Pincer Attack", [MTraits.Commander, MTraits.Tactic],
                 "Signal all squadmates; each can Step as a reaction. If any of your allies end this movement adjacent to an opponent, that opponent is off-guard to melee attacks from you and all other squadmates who responded to Pincer Attack until the start of your next turn.",
                 squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr))
                     ? AllSquadmateTarget(owner)
@@ -726,11 +729,7 @@ public abstract partial class Commander
             .WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                Creature? drilledTarget = targets.ChosenCreatures.Find(cr =>
-                                              cr.HasEffect(ModData.MQEffectIds.DrilledTarget) &&
-                                              !cr.HasEffect(ModData.MQEffectIds.AnimalReaction)) ??
-                                          targets.ChosenCreatures.FirstOrDefault(cr =>
-                                              !cr.HasEffect(ModData.MQEffectIds.AnimalReaction));
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 bool cancel = true;
                 foreach (Creature target in targets.ChosenCreatures)
                 {
@@ -738,7 +737,7 @@ public abstract partial class Commander
                         caster.QEffects.All(qEffect => qEffect.Name != "Drilled Reactions Expended");
                     if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable || (
                             (useDrilledReactions || drilledTarget != target) && !target.Actions.CanTakeReaction() &&
-                            !target.HasEffect(ModData.MQEffectIds.AnimalReaction)))
+                            !target.HasEffect(MQEffectIds.AnimalReaction)))
                     {
                         continue;
                     }
@@ -751,14 +750,14 @@ public abstract partial class Commander
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                         usedDrill = true;
                     }
-                    else if (!target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (!target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                         lostReaction = true;
                     }
-                    else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                         animalReact = true;
                     }
 
@@ -798,7 +797,7 @@ public abstract partial class Commander
                     else
                     {
                         if (usedDrill)
-                            caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                            caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                         if (lostReaction)
                             target.Actions.RefundReaction();
                         if (animalReact)
@@ -814,8 +813,8 @@ public abstract partial class Commander
 
     private static CombatAction StrikeHard(Creature owner)
     {
-        CombatAction strikeHard = new CombatAction(owner, ModData.MIllustrations.StrikeHard, "Strike Hard!",
-                [ModData.MTraits.Brandish, ModData.MTraits.Tactic, ModData.MTraits.Commander, Trait.Basic],
+        CombatAction strikeHard = new CombatAction(owner, MIllustrations.StrikeHard, "Strike Hard!",
+                [MTraits.Brandish, MTraits.Tactic, MTraits.Commander, Trait.Basic],
                 "Signal a squadmate within the aura of your commander's banner. That ally immediately attempts a Strike as a reaction.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
@@ -830,7 +829,7 @@ public abstract partial class Commander
             .WithEffectOnEachTarget(async delegate(CombatAction spell, Creature caster, Creature target, CheckResult _)
             {
                 bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 bool usedDrill = false;
                 bool lostReaction = false;
                 bool animalReact = false;
@@ -841,14 +840,14 @@ public abstract partial class Commander
                     usedDrill = true;
                 }
 
-                if (!useDrilledReactions && !target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                if (!useDrilledReactions && !target.HasEffect(MQEffectIds.AnimalReaction))
                 {
                     target.Actions.UseUpReaction();
                     lostReaction = true;
                 }
-                else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                else if (target.HasEffect(MQEffectIds.AnimalReaction))
                 {
-                    target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                    target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                     animalReact = true;
                 }
 
@@ -883,7 +882,7 @@ public abstract partial class Commander
                     {
                         spell.RevertRequested = true;
                         if (usedDrill)
-                            caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                            caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                         if (lostReaction)
                             target.Actions.RefundReaction();
                         if (animalReact)
@@ -897,9 +896,9 @@ public abstract partial class Commander
 
     private static CombatAction CoordinatingManeuvers(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.CoordinatingManeuvers,
+        CombatAction tactic = new CombatAction(owner, MIllustrations.CoordinatingManeuvers,
                 "Coordinating Maneuvers",
-                [ModData.MTraits.Tactic, ModData.MTraits.Brandish, ModData.MTraits.Commander, Trait.Basic],
+                [MTraits.Tactic, MTraits.Brandish, MTraits.Commander, Trait.Basic],
                 $"Signal one squadmate within the aura of your banner; that squadmate can immediately Step as a free action. If they end this movement next to an opponent, they can attempt to {UseCreatedTooltip("Reposition")} that target as a reaction. Repositioning requires a free hand.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
@@ -913,7 +912,7 @@ public abstract partial class Commander
             .WithEffectOnEachTarget(async (spell, caster, target, _) =>
             {
                 bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 var step = await target.StepAsync(
                     "Choose where to step, if you end your movement next to an opponent, you may attempt to Reposition the target as a reaction.",
                     true);
@@ -929,14 +928,14 @@ public abstract partial class Commander
                         usedDrill = true;
                     }
 
-                    if (!useDrilledReactions && !target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    if (!useDrilledReactions && !target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                         lostReaction = true;
                     }
-                    else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                         animalReact = true;
                     }
 
@@ -954,7 +953,7 @@ public abstract partial class Commander
                                     "Can only reposition enemies with coordinating maneuvers."));
                     List<Option> options = [new CancelOption(true)];
                     if (reposition.CanBeginToUse(target) && (target.Actions.CanTakeReaction() ||
-                                                             target.HasEffect(ModData.MQEffectIds.AnimalReaction) ||
+                                                             target.HasEffect(MQEffectIds.AnimalReaction) ||
                                                              useDrilledReactions))
                     {
                         GameLoop.AddDirectUsageOnCreatureOptions(reposition, options);
@@ -970,7 +969,7 @@ public abstract partial class Commander
                         {
                             case CancelOption:
                                 if (usedDrill)
-                                    caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                                    caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                                 if (lostReaction)
                                     target.Actions.RefundReaction();
                                 if (animalReact)
@@ -992,8 +991,8 @@ public abstract partial class Commander
 
     private static CombatAction DoubleTeam(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.DoubleTeam, "Double Team",
-                [Trait.Basic, ModData.MTraits.Commander, ModData.MTraits.Tactic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.DoubleTeam, "Double Team",
+                [Trait.Basic, MTraits.Commander, MTraits.Tactic],
                 $"Signal one squadmate who has an opponent within their reach. That ally can Shove or {UseCreatedTooltip("Reposition")} an opponent as a free action. If their maneuver is successful and the target ends their movement adjacent to a different squadmate, the second squadmate can attempt a melee Strike against that target as a reaction.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
@@ -1027,13 +1026,13 @@ public abstract partial class Commander
             .WithEffectOnEachTarget(async (spell, caster, target, _) =>
             {
                 bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 QEffect reaction = new()
                 {
                     AfterYouTakeAction = async (effect, action) =>
                     {
                         if (action.ActionId != ActionId.Shove &&
-                            action.ActionId != ModData.MActionIds.Reposition) return;
+                            action.ActionId != MActionIds.Reposition) return;
                         if (action.CheckResult <= CheckResult.Failure)
                         {
                             effect.ExpiresAt = ExpirationCondition.Immediately;
@@ -1059,13 +1058,13 @@ public abstract partial class Commander
                                 caster.AddQEffect(DrilledReactionsExpended(caster));
                             }
 
-                            if (!useDrilledReactions && !target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                            if (!useDrilledReactions && !target.HasEffect(MQEffectIds.AnimalReaction))
                             {
                                 target.Actions.UseUpReaction();
                             }
-                            else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                            else if (target.HasEffect(MQEffectIds.AnimalReaction))
                             {
-                                target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                                target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                             }
 
                             creature.AddQEffect(RespondedToTactic(caster));
@@ -1174,11 +1173,11 @@ public abstract partial class Commander
         List<Creature> allies = owner.Battle.AllCreatures.Where(cr => cr.FriendOf(owner) && cr.Alive).ToList();
         List<Creature> enemies = owner.Battle.AllCreatures.Where(cr => cr.EnemyOf(owner) && cr.Alive).ToList();
         bool more = allies.Count > enemies.Count;
-        bool died = owner.HasEffect(ModData.MQEffectIds.DeathCounter);
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.EndIt, "End it!",
+        bool died = owner.HasEffect(MQEffectIds.DeathCounter);
+        CombatAction tactic = new CombatAction(owner, MIllustrations.EndIt, "End it!",
                 [
-                    Trait.Basic, Trait.Incapacitation, ModData.MTraits.Commander, ModData.MTraits.Tactic,
-                    ModData.MTraits.Brandish
+                    Trait.Basic, Trait.Incapacitation, MTraits.Commander, MTraits.Tactic,
+                    MTraits.Brandish
                 ],
                 "If you and your allies outnumber all enemies on the battlefield, and you or a squadmate have reduced an enemy to 0 Hit Points since the start of your last turn, you may signal all squadmates within the aura of your banner; you and each ally can Step as a free action directly toward a hostile creature. Any hostile creatures within 10 feet of a squadmate after this movement must attempt a Will save against your class DC; on a failure they become fleeing for 1 round, and on a critical failure they become fleeing for 1 round and frightened 2. This is an emotion, fear, and mental effect.",
                 more && died
@@ -1211,7 +1210,7 @@ public abstract partial class Commander
                 foreach (Creature enemy in enemies.Where(cr =>
                              targets.ChosenCreatures.Any(creature => cr.DistanceTo(creature) <= 2)))
                 {
-                    var dc = caster.ClassDC(ModData.MTraits.Commander);
+                    var dc = caster.ClassDC(MTraits.Commander);
                     if (enemy.IsImmuneTo(Trait.Mental) || enemy.IsImmuneTo(Trait.Fear) ||
                         enemy.IsImmuneTo(Trait.Emotion)) continue;
                     CheckResult savingThrow = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Will, dc);
@@ -1239,8 +1238,8 @@ public abstract partial class Commander
     private static CombatAction Reload(Creature owner)
     {
         List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.Reload, "Reload!",
-                [ModData.MTraits.Commander, ModData.MTraits.Tactic, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.Reload, "Reload!",
+                [MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal all squadmates; each can immediately Interact to reload as a reaction.",
                 squadmates.Any(cr =>
                     new ReactionRequirement().Satisfied(owner, cr) &&
@@ -1252,33 +1251,28 @@ public abstract partial class Commander
             .WithActionCost(1).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (_, caster, targets) =>
             {
-                Creature drilledTarget = targets.ChosenCreatures.Find(cr =>
-                                             cr.HasEffect(ModData.MQEffectIds.DrilledTarget) &&
-                                             !cr.HasEffect(ModData.MQEffectIds.AnimalReaction)) ??
-                                         targets.ChosenCreatures.FirstOrDefault(cr =>
-                                             !cr.HasEffect(QEffectId.RangersCompanion))!;
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 foreach (Creature target in targets.ChosenCreatures.Where(cr =>
                              !cr.HasEffect(QEffectId.RangersCompanion)))
                 {
-                    bool useDrilledReactions =
-                        caster.QEffects.All(qEffect => qEffect.Name != "Drilled Reactions Expended");
+                    bool useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                     if (new ReactionRequirement().Satisfied(caster, target) != Usability.Usable) continue;
                     Item? tobeReloaded =
                         target.HeldItems.FirstOrDefault(item => item.EphemeralItemProperties.NeedsReload);
                     if (tobeReloaded == null) continue;
                     CombatAction reload = target.CreateReload(tobeReloaded).WithActionCost(0);
                     var confirm = await target.Battle.AskForConfirmation(target, target.Illustration,
-                        "Reload " + tobeReloaded.Name + (useDrilledReactions && drilledTarget.Name == target.Name
+                        "Reload " + tobeReloaded.Name + (useDrilledReactions && drilledTarget?.Name == target.Name
                             ? "?"
                             : " using a reaction?"), "yes");
                     if (!confirm) continue;
-                    if (useDrilledReactions && drilledTarget.Name == target.Name)
+                    if (useDrilledReactions && drilledTarget?.Name == target.Name)
                     {
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                     }
 
-                    if ((!useDrilledReactions || drilledTarget.Name != target.Name) &&
-                        !target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    if ((!useDrilledReactions || drilledTarget?.Name != target.Name) &&
+                        !target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                     }
@@ -1293,8 +1287,8 @@ public abstract partial class Commander
     private static CombatAction ShieldsUp(Creature owner)
     {
         List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.ShieldsUp, "Shields up!",
-                [ModData.MTraits.Commander, ModData.MTraits.Tactic, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.ShieldsUp, "Shields up!",
+                [MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal all squadmates within the aura of your commander’s banner; each can immediately Raise a Shield as a reaction. Squadmates who have a parry action (whether from a Parry weapon or a feat such as Dueling Parry or Twin Parry) may use that instead.\n\n{b}Special{/b} If one of your squadmates knows or has prepared the shield cantrip, they can cast it as a reaction instead of taking the actions normally granted by this tactic.",
                 squadmates.Any(cr =>
                     new ReactionRequirement().Satisfied(owner, cr) &&
@@ -1304,11 +1298,7 @@ public abstract partial class Commander
             .WithActionCost(1).WithSoundEffect(SfxName.RaiseShield)
             .WithEffectOnChosenTargets(async (_, caster, targets) =>
             {
-                Creature drilledTarget = targets.ChosenCreatures.Find(cr =>
-                                             cr.HasEffect(ModData.MQEffectIds.DrilledTarget) &&
-                                             !cr.HasEffect(ModData.MQEffectIds.AnimalReaction)) ??
-                                         targets.ChosenCreatures.FirstOrDefault(cr =>
-                                             !cr.HasEffect(QEffectId.RangersCompanion))!;
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 foreach (Creature target in targets.ChosenCreatures)
                 {
                     if (target.HasEffect(QEffectId.RangersCompanion)) continue;
@@ -1379,18 +1369,18 @@ public abstract partial class Commander
                     names.Add("Cancel");
                     ChoiceButtonOption choice = await target.AskForChoiceAmongButtons(target.Illustration,
                         "Choose which defensive option to use." +
-                        (useDrilledReactions && drilledTarget.Name == target.Name
+                        (useDrilledReactions && drilledTarget?.Name == target.Name
                             ? ""
                             : " This will use a reaction."), names.ToArray());
                     if (names[choice.Index] == "Cancel") continue;
                     if (!await target.Battle.GameLoop.FullCast(shields[choice.Index])) continue;
                     target.AddQEffect(RespondedToTactic(caster));
-                    if (useDrilledReactions && drilledTarget.Name == target.Name)
+                    if (useDrilledReactions && drilledTarget?.Name == target.Name)
                     {
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                     }
 
-                    if (!useDrilledReactions || drilledTarget.Name != target.Name)
+                    if (!useDrilledReactions || drilledTarget?.Name != target.Name)
                     {
                         target.Actions.UseUpReaction();
                     }
@@ -1401,8 +1391,8 @@ public abstract partial class Commander
 
     private static CombatAction TacticalTakedown(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.TacticalTakedown, "Tactical Takedown",
-                [ModData.MTraits.Commander, ModData.MTraits.Tactic, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.TacticalTakedown, "Tactical Takedown",
+                [MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal up to two squadmates within the aura of your commander’s banner. Each of those allies can Stride up to half their Speed as a reaction. If they both end this movement adjacent to an enemy, that enemy must succeed at a Reflex save against your class DC or fall prone.",
                 (Target.MultipleCreatureTargets(2, () =>
                 {
@@ -1417,11 +1407,7 @@ public abstract partial class Commander
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                Creature? drilledTarget = targets.ChosenCreatures.Find(cr =>
-                                              cr.HasEffect(ModData.MQEffectIds.DrilledTarget) &&
-                                              !cr.HasEffect(ModData.MQEffectIds.AnimalReaction)) ??
-                                          targets.ChosenCreatures.FirstOrDefault(cr =>
-                                              !cr.HasEffect(ModData.MQEffectIds.AnimalReaction));
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 int moved = 0;
                 foreach (Creature target in targets.ChosenCreatures)
                 {
@@ -1435,14 +1421,14 @@ public abstract partial class Commander
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                         usedDrill = true;
                     }
-                    else if (!target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (!target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                         lostReaction = true;
                     }
-                    else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                         animalReact = true;
                     }
 
@@ -1452,7 +1438,7 @@ public abstract partial class Commander
                             maximumHalfSpeed: true, allowCancel: true))
                     {
                         if (usedDrill)
-                            caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                            caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                         if (lostReaction)
                             target.Actions.RefundReaction();
                         if (animalReact)
@@ -1491,8 +1477,8 @@ public abstract partial class Commander
 
     private static CombatAction DemoralizingCharge(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.DemoralizingCharge, "Demoralizing Charge",
-                [ModData.MTraits.Brandish, ModData.MTraits.Commander, ModData.MTraits.Tactic, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.DemoralizingCharge, "Demoralizing Charge",
+                [MTraits.Brandish, MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal up to two squadmates within the aura of your commander’s banner; as a free action, those squadmates can immediately Stride toward an enemy they are observing. If they end this movement adjacent to an enemy, they can attempt to Strike that enemy as a reaction. For each of these Strikes that are successful, the target enemy must succeed at a Will save against your class DC or become frightened 1 (frightened 2 on a critical failure); this is an emotion, fear, and mental effect. If both Strikes target the same enemy, that enemy attempts the save only once after the final attack and takes a –1 circumstance penalty to their Will save to resist this effect (this penalty increases to –2 if both Strikes are successful or to –3 if both Strikes are successful and either is a critical hit).",
                 (Target.MultipleCreatureTargets(2, () =>
                 {
@@ -1507,7 +1493,7 @@ public abstract partial class Commander
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                Creature? drilledTarget = DrilledTarget(targets);
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 bool moved = false;
                 foreach (Creature target in targets.ChosenCreatures)
                 {
@@ -1537,7 +1523,11 @@ public abstract partial class Commander
                         ?.WithActionCost(0);
                     List<Tile> floodFill = Pathfinding.Floodfill(target, target.Battle, new PathfindingDescription()
                         {
-                            Squares = target.Speed
+                            Squares = target.Speed,
+                            Style =
+                            {
+                                PermitsStep = false
+                            }
                         })
                         .Where(tile =>
                             (tile.LooksFreeTo(target) || tile.Equals(target.Occupies)) &&
@@ -1594,13 +1584,13 @@ public abstract partial class Commander
                     {
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                     }
-                    else if (!target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (!target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                     }
-                    else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                     }
 
                     CheckResult strike = await target.MakeStrike(bestStrike, enemy);
@@ -1608,7 +1598,7 @@ public abstract partial class Commander
                     {
                         Tag = strike,
                         Source = target,
-                        Id = ModData.MQEffectIds.DemoCharge
+                        Id = MQEffectIds.DemoCharge
                     };
                     enemy.AddQEffect(memory);
                 }
@@ -1620,14 +1610,14 @@ public abstract partial class Commander
                 }
 
                 List<Creature> enemies = caster.Battle.AllCreatures
-                    .Where(cr => cr.HasEffect(ModData.MQEffectIds.DemoCharge)).ToList();
+                    .Where(cr => cr.HasEffect(MQEffectIds.DemoCharge)).ToList();
                 switch (enemies.Count)
                 {
                     case 0:
                         return;
                     case 1:
                         Creature enemy = enemies[0];
-                        List<CheckResult> results = enemy.QEffects.Where(qf => qf.Id == ModData.MQEffectIds.DemoCharge)
+                        List<CheckResult> results = enemy.QEffects.Where(qf => qf.Id == MQEffectIds.DemoCharge)
                             .Select(qf =>
                                 qf.Tag is CheckResult tag ? tag : CheckResult.Failure).ToList();
                         List<CheckResult> goodResults = results.Where(result => result >= CheckResult.Success).ToList();
@@ -1651,7 +1641,7 @@ public abstract partial class Commander
                             enemy.IsImmuneTo(Trait.Mental)) break;
                         enemy.AddQEffect(penaltyQf);
                         CheckResult save = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Will,
-                            caster.ClassDC(ModData.MTraits.Commander));
+                            caster.ClassDC(MTraits.Commander));
                         if (save == CheckResult.Failure) enemy.AddQEffect(QEffect.Frightened(1));
                         else if (save == CheckResult.CriticalFailure) enemy.AddQEffect(QEffect.Frightened(2));
                         penaltyQf.ExpiresAt = ExpirationCondition.Immediately;
@@ -1662,23 +1652,22 @@ public abstract partial class Commander
                                      !enemy2.IsImmuneTo(Trait.Mental)))
                         {
                             List<CheckResult> results2 = enemy2.QEffects
-                                .Where(qf => qf.Id == ModData.MQEffectIds.DemoCharge).Select(qf =>
+                                .Where(qf => qf.Id == MQEffectIds.DemoCharge).Select(qf =>
                                     qf.Tag is CheckResult tag ? tag : CheckResult.Failure).ToList();
                             List<CheckResult> goodResults2 =
                                 results2.Where(result => result >= CheckResult.Success).ToList();
                             if (goodResults2.Count == 0) continue;
                             CheckResult save2 = CommonSpellEffects.RollSavingThrow(enemy2, spell, Defense.Will,
-                                caster.ClassDC(ModData.MTraits.Commander));
+                                caster.ClassDC(MTraits.Commander));
                             if (save2 == CheckResult.Failure) enemy2.AddQEffect(QEffect.Frightened(1));
                             else if (save2 == CheckResult.CriticalFailure) enemy2.AddQEffect(QEffect.Frightened(2));
                         }
-
                         break;
                 }
 
                 foreach (Creature enemy in enemies.Where(cr => cr.Alive))
                 {
-                    enemy.RemoveAllQEffects(qff => qff.Id == ModData.MQEffectIds.DemoCharge);
+                    enemy.RemoveAllQEffects(qff => qff.Id == MQEffectIds.DemoCharge);
                 }
             });
         return tactic;
@@ -1686,8 +1675,8 @@ public abstract partial class Commander
 
     private static CombatAction BuckleCutBlitz(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.BuckleCutBlitz, "Buckle-cut Blitz",
-                [ModData.MTraits.Brandish, ModData.MTraits.Commander, ModData.MTraits.Tactic, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.BuckleCutBlitz, "Buckle-cut Blitz",
+                [MTraits.Brandish, MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal up to two squadmates within the aura of your commander’s banner; these squadmates can Stride up to their Speed as a reaction. Each enemy they are adjacent to at any point during this movement must attempt a Reflex save against your class DC or become clumsy 1 for 1 round (clumsy 2 on a critical failure).",
                 (Target.MultipleCreatureTargets(2, () =>
                 {
@@ -1703,7 +1692,7 @@ public abstract partial class Commander
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                Creature? drilledTarget = DrilledTarget(targets);
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 int moved = 0;
                 QEffect stateCheck = new()
                 {
@@ -1713,17 +1702,17 @@ public abstract partial class Commander
                         if (self.AnimationData.LongMovement == null) return;
                         if (!self.Battle.AllCreatures.Any(cr =>
                                 cr.EnemyOf(self) && cr.IsAdjacentTo(self) &&
-                                !cr.HasEffect(ModData.MQEffectIds.BuckleBlitz))) return;
+                                !cr.HasEffect(MQEffectIds.BuckleBlitz))) return;
                         foreach (Creature enemy in self.Battle.AllCreatures.Where(cr =>
                                      cr.EnemyOf(self) && cr.IsAdjacentTo(self) &&
-                                     !cr.HasEffect(ModData.MQEffectIds.BuckleBlitz)))
+                                     !cr.HasEffect(MQEffectIds.BuckleBlitz)))
                         {
                             enemy.AddQEffect(new QEffect()
                             {
-                                Id = ModData.MQEffectIds.BuckleBlitz,
+                                Id = MQEffectIds.BuckleBlitz,
                             });
                             CheckResult save = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Reflex,
-                                caster.ClassDC(ModData.MTraits.Commander));
+                                caster.ClassDC(MTraits.Commander));
                             if (save == CheckResult.CriticalFailure)
                                 enemy.AddQEffect(QEffect.Clumsy(2).WithExpirationAtStartOfSourcesTurn(caster, 1));
                             else if (save == CheckResult.Failure)
@@ -1734,7 +1723,7 @@ public abstract partial class Commander
                 foreach (Creature target in targets.ChosenCreatures)
                 {
                     bool useDrilledReactions =
-                        caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                        caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                     bool usedDrill = false;
                     bool lostReaction = false;
                     bool animalReact = false;
@@ -1743,14 +1732,14 @@ public abstract partial class Commander
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                         usedDrill = true;
                     }
-                    else if (!target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (!target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                         lostReaction = true;
                     }
-                    else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                         animalReact = true;
                     }
 
@@ -1762,7 +1751,7 @@ public abstract partial class Commander
                         case false:
                             stateCheck.ExpiresAt = ExpirationCondition.Immediately;
                             if (usedDrill)
-                                caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                                caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                             if (lostReaction)
                                 target.Actions.RefundReaction();
                             if (animalReact)
@@ -1779,9 +1768,9 @@ public abstract partial class Commander
                 }
 
                 foreach (Creature bad in caster.Battle.AllCreatures.Where(cr =>
-                             cr.HasEffect(ModData.MQEffectIds.BuckleBlitz)))
+                             cr.HasEffect(MQEffectIds.BuckleBlitz)))
                 {
-                    bad.RemoveAllQEffects(qff => qff.Id == ModData.MQEffectIds.BuckleBlitz);
+                    bad.RemoveAllQEffects(qff => qff.Id == MQEffectIds.BuckleBlitz);
                 }
 
                 if (moved == 0)
@@ -1792,8 +1781,8 @@ public abstract partial class Commander
 
     private static CombatAction StupefyingRaid(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.StupefyingRaid, "Stupefying Raid",
-                [ModData.MTraits.Brandish, ModData.MTraits.Commander, ModData.MTraits.Tactic, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.StupefyingRaid, "Stupefying Raid",
+                [MTraits.Brandish, MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Your team dashes about in a series of maneuvers that leave the enemy befuddled. Signal up to two squadmates within the aura of your commander’s banner; these squadmates can Stride up to their Speed as a reaction. Each enemy they are adjacent to at any point during this movement must attempt a Will save against your class DC or become stupefied 1 for 1 round (stupefied 2 on a critical failure); this is a mental effect.",
                 (Target.MultipleCreatureTargets(2, () =>
                 {
@@ -1809,7 +1798,7 @@ public abstract partial class Commander
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                Creature? drilledTarget = DrilledTarget(targets);
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 var moved = 0;
                 QEffect stateCheck = new()
                 {
@@ -1819,17 +1808,17 @@ public abstract partial class Commander
                         if (self.AnimationData.LongMovement == null) return;
                         if (!self.Battle.AllCreatures.Any(cr =>
                                 cr.EnemyOf(self) && cr.IsAdjacentTo(self) &&
-                                !cr.HasEffect(ModData.MQEffectIds.StupefyingRaid))) return;
+                                !cr.HasEffect(MQEffectIds.StupefyingRaid))) return;
                         foreach (Creature enemy in self.Battle.AllCreatures.Where(cr =>
                                      cr.EnemyOf(self) && cr.IsAdjacentTo(self) &&
-                                     !cr.HasEffect(ModData.MQEffectIds.StupefyingRaid) && !cr.IsImmuneTo(Trait.Mental)))
+                                     !cr.HasEffect(MQEffectIds.StupefyingRaid) && !cr.IsImmuneTo(Trait.Mental)))
                         {
                             enemy.AddQEffect(new QEffect()
                             {
-                                Id = ModData.MQEffectIds.StupefyingRaid
+                                Id = MQEffectIds.StupefyingRaid
                             });
                             CheckResult save = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Will,
-                                caster.ClassDC(ModData.MTraits.Commander));
+                                caster.ClassDC(MTraits.Commander));
                             if (save == CheckResult.CriticalFailure)
                                 enemy.AddQEffect(QEffect.Stupefied(2).WithExpirationAtStartOfSourcesTurn(caster, 1));
                             else if (save == CheckResult.Failure)
@@ -1840,7 +1829,7 @@ public abstract partial class Commander
                 foreach (Creature target in targets.ChosenCreatures)
                 {
                     bool useDrilledReactions =
-                        caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                        caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                     bool usedDrill = false;
                     bool lostReaction = false;
                     bool animalReact = false;
@@ -1849,14 +1838,14 @@ public abstract partial class Commander
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                         usedDrill = true;
                     }
-                    else if (!target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (!target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                         lostReaction = true;
                     }
-                    else if (target.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
                     {
-                        target.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                         animalReact = true;
                     }
 
@@ -1868,7 +1857,7 @@ public abstract partial class Commander
                         case false:
                             stateCheck.ExpiresAt = ExpirationCondition.Immediately;
                             if (usedDrill)
-                                caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                                caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                             if (lostReaction)
                                 target.Actions.RefundReaction();
                             if (animalReact)
@@ -1885,9 +1874,9 @@ public abstract partial class Commander
                 }
 
                 foreach (Creature bad in caster.Battle.AllCreatures.Where(cr =>
-                             cr.HasEffect(ModData.MQEffectIds.StupefyingRaid)))
+                             cr.HasEffect(MQEffectIds.StupefyingRaid)))
                 {
-                    bad.RemoveAllQEffects(qff => qff.Id == ModData.MQEffectIds.StupefyingRaid);
+                    bad.RemoveAllQEffects(qff => qff.Id == MQEffectIds.StupefyingRaid);
                 }
 
                 if (moved == 0)
@@ -1898,10 +1887,10 @@ public abstract partial class Commander
 
     private static CombatAction SlipAndSizzle(Creature owner)
     {
-        CombatAction tactic = new CombatAction(owner, ModData.MIllustrations.SlipAndSizzle, "Slip and Sizzle",
-                [ModData.MTraits.Commander, ModData.MTraits.Tactic, Trait.Basic],
+        CombatAction tactic = new CombatAction(owner, MIllustrations.SlipAndSizzle, "Slip and Sizzle",
+                [MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal two squadmates within the aura of your commander’s banner; one of these squadmates must be adjacent to an opponent and the other must be capable of casting a spell that deals damage. The first squadmate can attempt to Trip the adjacent opponent as a reaction. If this Trip is successful, the second squadmate can cast a ranged spell that deals damage and takes 2 or fewer actions to cast. This spell is cast as a reaction and must either target the tripped opponent or include the tripped opponent in the spell’s area.\n\nIf the second squadmate cast a spell using slots or Focus Points as part of this tactic, they are slowed 1 until the end of their next turn and do not gain a reaction when they regain actions at the start of their next turn." +
-                "\n{b}Note{/b} Spells with variants, for example: Magic Missile or Scorching Ray, cannot be cast at this time.",
+                "\n{b}Note{/b} Spells with action cost variants (for example: Magic Missile or Scorching Ray) cannot be cast at this time.",
                 Target.MultipleCreatureTargets(
                     new CreatureTarget(RangeKind.Ranged,
                     [
@@ -1918,9 +1907,9 @@ public abstract partial class Commander
                     ], (_, _, _) => int.MinValue)).WithMustBeDistinct().WithMinimumTargets(2))
             .WithActionCost(2).WithSoundEffect(SfxName.Trip).WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                Creature? drilledTarget = DrilledTarget(targets);
+                Creature? drilledTarget = DrilledTarget(targets, caster);
                 bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != ModData.MQEffectIds.ExpendedDrilled);
+                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 Creature tripper = targets.ChosenCreatures[0];
                 Creature mage = targets.ChosenCreatures[1];
                 bool usedDrill = false;
@@ -1943,14 +1932,14 @@ public abstract partial class Commander
                     caster.AddQEffect(DrilledReactionsExpended(caster));
                     usedDrill = true;
                 }
-                else if (!tripper.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                else if (!tripper.HasEffect(MQEffectIds.AnimalReaction))
                 {
                     tripper.Actions.UseUpReaction();
                     lostReaction = true;
                 }
-                else if (tripper.HasEffect(ModData.MQEffectIds.AnimalReaction))
+                else if (tripper.HasEffect(MQEffectIds.AnimalReaction))
                 {
-                    tripper.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.AnimalReaction);
+                    tripper.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                     animalReact = true;
                 }
 
@@ -1962,7 +1951,7 @@ public abstract partial class Commander
                 {
                     spell.RevertRequested = true;
                     if (usedDrill)
-                        caster.RemoveAllQEffects(qf => qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                        caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
                     if (lostReaction)
                         tripper.Actions.RefundReaction();
                     if (animalReact)
@@ -2036,7 +2025,7 @@ public abstract partial class Commander
                                             action.RevertRequested = true;
                                             if (usedDrilled2)
                                                 caster.RemoveAllQEffects(qf =>
-                                                    qf.Id == ModData.MQEffectIds.ExpendedDrilled);
+                                                    qf.Id == MQEffectIds.ExpendedDrilled);
                                             if (usedReaction2)
                                                 tripper.Actions.RefundReaction();
                                             action.Disrupted = true;

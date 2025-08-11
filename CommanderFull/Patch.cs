@@ -31,8 +31,8 @@ internal static class ArmorRegiment
 
     private static bool IsUnburdenedIronField(object operand)
     {
-        if (operand is FieldInfo fi)
-            return fi.FieldType == typeof(bool) && fi.Name == "unburdenedIron";
+        if (operand is FieldInfo fieldInfo)
+            return fieldInfo.FieldType == typeof(bool) && fieldInfo.Name == "unburdenedIron";
         //fallback to string check
         string? opStr = operand.ToString();
         return opStr != null && opStr.Contains("unburdenedIron") && opStr.Contains("Boolean");

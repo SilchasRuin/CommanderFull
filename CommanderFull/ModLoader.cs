@@ -189,7 +189,6 @@ public class ModLoader
                 FeatRecallWeakness.CombatAssessment.Traits = [];
             }
         };
-        //update description
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
             if (!action.Name.Contains("Battle Medicine")) return;
@@ -211,8 +210,7 @@ public class ModLoader
                         : Usability.Usable;
                 });
             action.Description = action.Description.Insert(action.Description.IndexOf('.'), " or be wielding a shield");
-        });
-        //update statblocks
+        }); 
         int abilitiesIndex = CreatureStatblock.CreatureStatblockSectionGenerators.FindIndex(gen => gen.Name == "Abilities");
         CreatureStatblock.CreatureStatblockSectionGenerators.Insert(abilitiesIndex,
             new CreatureStatblockSectionGenerator("Prepared tactics", TacticsStatBlock.DescribePreparedTactics));
@@ -220,6 +218,10 @@ public class ModLoader
         {
             Feat? commanderClass = AllFeats.All.FirstOrDefault(ft => ft.FeatName == ModData.MFeatNames.Commander);
             commanderClass!.RulesText = commanderClass.RulesText.Replace("Ability boosts", "Attribute boosts");
+            Feat? battlePlanner = AllFeats.All.FirstOrDefault(feat => feat.FeatName == ExplorationActivities.ModData.FeatNames.BattlePlanner);
+            if (battlePlanner != null)
+                battlePlanner.RulesText +=
+                    $"\n\n{{b}}Special{{/b}} If you are a Commander with the level 3 {Commander.UseCreatedTooltip("warfare expertise")} class feature, you instead gain this effect: If you or one of your allies has taken the scout exploration activity, you reroll your initiative and take the higher value.";
         };
     }
     public static AdvancedRequest NewSleepRequest(int sleepTime)

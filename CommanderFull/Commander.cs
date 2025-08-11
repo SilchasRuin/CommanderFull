@@ -45,6 +45,7 @@ namespace CommanderFull;
 public abstract partial class Commander
 {
     public static readonly Skill WarfareLore = ExplorationActivities.ModData.Skills.WarfareLore;
+    public static readonly Trait WarfareLoreTrait = ExplorationActivities.ModData.Traits.WarfareLore;
     public static Dictionary<string, FeatName> TacticsDict { get; } = [];
     public static Dictionary<string, FeatName> PrereqsDict { get; } = [];
     public static Dictionary<FeatName, FeatName> PrereqsToTactics { get; } = [];
@@ -149,7 +150,14 @@ public abstract partial class Commander
                     ));
                 values.SetProficiency(MTraits.Commander, Proficiency.Trained);
                 values.GrantFeat(FeatName.ShieldBlock);
-                values.GrantFeat(ExplorationActivities.ModData.FeatNames.WarfareLore);
+                if (!values.HasFeat(ExplorationActivities.ModData.FeatNames.AdditionalLoreWF))
+                {
+                    values.TrainInThisOrSubstitute(WarfareLore);
+                }
+                else if (ModManager.TryParse("Fount of Knowledge", out FeatName fountOfKnowledge))
+                {
+                    values.GrantFeat(fountOfKnowledge);
+                }
                 values.AddSelectionOption(new MultipleFeatSelectionOption("CommanderFolio", "Commander Folio", 1,
                     feat => feat.HasTrait(MTraits.BasicTacticPre), 5));
                 values.AddSelectionOption(new SingleFeatSelectionOption("CommanderFeat1", "Commander feat", 1,
@@ -173,8 +181,7 @@ public abstract partial class Commander
                 values.IncreaseProficiency(13, Trait.Martial, Proficiency.Master);
                 values.IncreaseProficiency(13, Trait.Simple, Proficiency.Master);
                 values.IncreaseProficiency(13, Trait.Unarmed, Proficiency.Master);
-                values.AddAtLevel(15,
-                    v15 => v15.GrantFeat(ExplorationActivities.ModData.FeatNames.WarfareLoreLegendary));
+                values.AddAtLevel(15, v15 => v15.GrantFeat(ExplorationActivities.ModData.FeatNames.WarfareLoreLegendary));
                 values.IncreaseProficiency(15, Trait.Reflex, Proficiency.Master);
                 values.IncreaseProficiency(15, MTraits.Commander, Proficiency.Master);
                 values.AddAtLevel(15,
@@ -261,7 +268,7 @@ public abstract partial class Commander
                     cr.AddQEffect(new QEffect("Warfare Expertise",
                         "As long as at least one enemy is visible at the start of an encounter, you can roll Warfare Lore in place of Perception for initiative. " +
                         "{i}Special{/i} If you have DawnniEx installed, you use Warfare Lore for all " +
-                        CreateTooltips("Recall Weakness", FeatRecallWeakness.RecallWeaknessAction(cr).Description) +
+                        CreateTooltips("Recall Weakness", FeatRecallWeakness.RecallWeaknessAction(cr).Name+"\n{i}Skill{/i}\n\n"+FeatRecallWeakness.RecallWeaknessAction(cr).Description) +
                         " actions if your Warfare Lore is better than the original skill check.")
                     {
                         StartOfCombat = _ =>
@@ -580,9 +587,9 @@ public abstract partial class Commander
         return new TrueFeat(ModManager.RegisterFeatName(feat.Name + "PrereqTactics", feat.Name), level, feat.FlavorText,
             feat.RulesText, traits.ToArray());
     }
-    private static void CreateDefaultTargetLogic(Feat root, int index)
+    private static void CreateDefaultTargetLogic(Feat defTarg, int index)
     {
-        root.WithNameCreator(_ =>
+        defTarg.WithNameCreator(_ =>
                 GetCharacterSheetFromPartyMember(index)?.Name ?? "NULL")
             .WithRulesTextCreator(_ =>
                 $"{GetCharacterSheetFromPartyMember(index)?.Name ?? "NULL"} will be the default target for your Drilled Reactions feature.")
@@ -611,12 +618,12 @@ public abstract partial class Commander
     }
 
     private static readonly string RegisterReposition = CreateTooltips("Reposition", "{b}Reposition {icon:Action}{/b}" +
-                                                                                     "\n{i}Attack{/i}" +
-                                                                                     "\n\n{b}Requirements{/b} You either have at least one hand free, or you're grabbing or restraining the target." +
-                                                                                     "\n\nAttempt an Athletics check against an adjacent target's Fortitude DC." + S.FourDegreesOfSuccess(
-                                                                                         "You move the creature up to 10 feet. It must remain within your reach during this movement, and you can't move it into or through obstacles.",
-                                                                                         "You move the target up to 5 feet. It must remain within your reach during this movement, and you can't move it into or through obstacles.",
-                                                                                         null, "The target can move you up to 5 feet as though it successfully Repositioned you."));
+        "\n{i}Attack{/i}" +
+        "\n\n{b}Requirements{/b} You either have at least one hand free, or you're grabbing or restraining the target." +
+        "\n\nAttempt an Athletics check against an adjacent target's Fortitude DC." + S.FourDegreesOfSuccess(
+            "You move the creature up to 10 feet. It must remain within your reach during this movement, and you can't move it into or through obstacles.",
+            "You move the target up to 5 feet. It must remain within your reach during this movement, and you can't move it into or through obstacles.",
+            null, "The target can move you up to 5 feet as though it successfully Repositioned you."));
 
     private static void AddTags(Feat feat)
     {
@@ -665,9 +672,9 @@ public abstract partial class Commander
         return choiceAction;
     }
 
-    private static Creature? DrilledTarget(ChosenTargets targets)
+    private static Creature? DrilledTarget(ChosenTargets targets, Creature commander)
     {
-        return targets.ChosenCreatures.Find(cr => cr.HasEffect(MQEffectIds.DrilledTarget) && !cr.HasEffect(MQEffectIds.AnimalReaction)) ??
+        return targets.ChosenCreatures.Find(cr => cr.QEffects.Any(qf => qf.Id == MQEffectIds.DrilledTarget && qf.Source == commander) && !cr.HasEffect(MQEffectIds.AnimalReaction)) ??
                targets.ChosenCreatures.FirstOrDefault(cr => !cr.HasEffect(MQEffectIds.AnimalReaction));
     }
      private static Possibilities CreateSpells(Creature target)
