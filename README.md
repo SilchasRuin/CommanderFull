@@ -66,6 +66,7 @@ I endeavored to keep things as close to tabletop as possible, but in some places
 * [Naval Training](https://2e.aonprd.com/Tactics.aspx?ID=4) Grants a swim speed equal to your land speed instead of 20 feet. The Passive effect is not implemented as Dawnsbury does not have Athletics checks to swim at this time.
 * [Shield's Up](https://2e.aonprd.com/Tactics.aspx?ID=12) Applies to Parry actions granted by feats as well as those granted by weapons.
 * [Slip and Sizzle](https://2e.aonprd.com/Tactics.aspx?ID=18) At this time, the spellcaster cannot cast spells with variable action costs due to limitations in creating those actions.
+* [Commander Dedication](https://2e.aonprd.com/Feats.aspx?ID=7886) If you are already trained in Warfare Lore when you take this dedication, you can become trained in any skill instead of  any lore.
 
 ### Attributions and Thanks
 * Thanks to Ubik2, who made the [BattleCry Playtest](https://steamcommunity.com/sharedfiles/filedetails/?id=3246164409&searchtext=battlecry) mod, for their blessing to make this mod and for some of the code I used as a basis for some functionality.
