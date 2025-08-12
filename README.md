@@ -46,9 +46,8 @@ If you take the Cadet background from my Exploration Activities mod and choose t
 ## [Tactics](https://2e.aonprd.com/Tactics.aspx)
 * **Mobility:** Defensive Retreat, Gather To Me!, Naval Training, Passage of Lines, Protective Screen
 * **Offensive:** Coordinating Maneuvers, Double Team, End It!, Pincer Attack, Reload!, Shields Up!, Strike Hard!, Tactical Takedown
-* **Expert:** Buckle-cut Blitz, Demoralizing Charge, Slip and Sizzle, Stupefying Raid
-Mountaineering Training is not implementable without a completely homebrew effect. 
-Alley-oop and Take the High Ground will be coming soon™.
+* **Expert:** Alley-oop, Buckle-cut Blitz, Demoralizing Charge, Slip and Sizzle, Stupefying Raid, Take the High Ground
+Mountaineering Training is not implementable without a completely homebrew effect.
 
 ## Notes on Implementations
 * The Banner is implemented as an attachable item. Attach it to your weapon, shield, or animal companion's barding. As long as you have it in your inventory, you will benefit from the banner. If you do not equip it to anything, a basic banner will be added into your carried items at the start of combat (this mimics attaching your banner to a pole on your back).
@@ -66,6 +65,7 @@ I endeavored to keep things the same as tabletop, but in some places that was no
 * [Naval Training](https://2e.aonprd.com/Tactics.aspx?ID=4) Grants a swim speed equal to your land speed instead of 20 feet. The Passive effect is not implemented as Dawnsbury does not have Athletics checks to swim at this time.
 * [Shield's Up](https://2e.aonprd.com/Tactics.aspx?ID=12) Applies to Parry actions granted by feats as well as those granted by weapons.
 * [Slip and Sizzle](https://2e.aonprd.com/Tactics.aspx?ID=18) At this time, the spellcaster cannot cast spells with variable action costs due to limitations in creating those actions.
+* [Take the High Ground](https://2e.aonprd.com/Tactics.aspx?ID=20) Jumping vertically is not implemented in Dawnsbury so that is not an option. The name for the action in an encounter is Take the Heights, as Take the High Ground was too long and looked bad in the log.
 * [Commander Dedication](https://2e.aonprd.com/Feats.aspx?ID=7886) If you are already trained in Warfare Lore when you take this dedication, you can become trained in any skill instead of  any lore.
 
 ### Attributions and Thanks
