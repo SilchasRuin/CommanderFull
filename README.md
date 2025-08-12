@@ -19,13 +19,21 @@ If you take the Cadet background from my Exploration Activities mod and choose t
 **Skills** 2 + Society + Warfare Lore + Intelligence; standard skill increases and feats
 
 **Level 1:** Commander's Banner, Tactics, Drilled Reactions, Shield Block, Commander Feat
+
 **Level 2:** Commander Feat
+
 **Level 3:** Warfare Expertise
+
 **Level 4:** Commander Feat
+
 **Level 5:** Military Expertise
+
 **Level 6:** Commander Feat
+
 **Level 7:** Expert Tactician
+
 **Level 8:** Commander Feat
+
 **Level 9:** Armor Expertise, Commanding Will
 
 ## [Class Feats](https://2e.aonprd.com/Feats.aspx?Traits=855&values-to=level%3A8&sort=level-asc+name-asc&display=table&columns=pfs+source+rarity+trait+level+prerequisite+summary+spoilers)
