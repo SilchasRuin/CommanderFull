@@ -8,8 +8,8 @@ A battlefield leader and supporter. Make use of clever tactics and potent buffs 
 This mod requires my [Exploration Activities](https://steamcommunity.com/sharedfiles/filedetails/?id=3527574947) mod, as it adds the Warfare Lore skill. Additionally, the **Battle Planner** skill feat from this mod has an alternate effect for level 3+ Commanders.
 
 ⚠️ Optional Mods ⚠️
-Commander has several features based on [b]Recall Knowledge[/b], these require [Dawnni Expanded](https://steamcommunity.com/sharedfiles/filedetails/?id=3163146733) and apply to the **Recall Weakness** action provided by that mod.
-If you take the Cadet background from my Exploration Activities mod and choose the Commander class, if you have Pixie1001's [Bundle of Backgrounds](https://steamcommunity.com/sharedfiles/filedetails/?id=3348552008&searchtext=backgrounds) mod, you will gain the **Fount of Knowledge** skill feat instead of [b]Additional Lore - Warfare Lore[/b].
+Commander has several features based on **Recall Knowledge**, these require [Dawnni Expanded](https://steamcommunity.com/sharedfiles/filedetails/?id=3163146733) and apply to the **Recall Weakness** action provided by that mod.
+If you take the Cadet background from my Exploration Activities mod and choose the Commander class, if you have Pixie1001's [Bundle of Backgrounds](https://steamcommunity.com/sharedfiles/filedetails/?id=3348552008&searchtext=backgrounds) mod, you will gain the **Fount of Knowledge** skill feat instead of **Additional Lore - Warfare Lore**.
 
 # [Class Features](https://2e.aonprd.com/Classes.aspx?ID=66)
 **Key Attribute** Intelligence
