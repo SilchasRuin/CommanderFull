@@ -58,7 +58,7 @@ Alley-oop and Take the High Ground will be coming soon™.
 
 ## Differences from Tabletop
 I endeavored to keep things the same as tabletop, but in some places that was not possible or would be too limiting. The differences are listed below.
-* [Armor Regiment Training](https://2e.aonprd.com/Feats.aspx?ID=7792) Instead of it's tabletop effect, it allows you to ignore your armor's speed penalty and still allows you to rest in armor (thanks to @AnaseSkyrider)
+* [Armor Regiment Training](https://2e.aonprd.com/Feats.aspx?ID=7792) Instead of it's tabletop effect, it allows you to ignore your armor's speed penalty and still allows you to rest in armor (thanks to @AnaseSkyrider).
 * [Plant Banner](https://2e.aonprd.com/Feats.aspx?ID=7796) A planted banner cannot be destroyed, though it can be stolen. Instead of changing the banner's aura to a 40-foot burst, it becomes a 35-foot emanation.
 * [Shielded Recovery](https://2e.aonprd.com/Feats.aspx?ID=7795) Dawnsbury does not implement a free hand requirement for medicine actions other than Battle Medicine, so references to changing those requirements has been removed.
 * [Banner's Inspiration](https://2e.aonprd.com/Feats.aspx?ID=7804) Dawnsbury doesn't keep information regarding saving throws, or whether the ability is a mental effect on most effects. Therefore, the implementation is slightly different: in addition to reducing fear, stupefied is also reduced. Instead of rerolling the original saving throw, a will save is made against a standard DC by level check to remove Confusion or Paralysis.
