@@ -57,7 +57,7 @@ Alley-oop and Take the High Ground will be coming soon™.
 * Tactics default to Auditory, but can be change to visual and back through a toggle.
 
 ## Differences from Tabletop
-I endeavored to keep things as close to tabletop as possible, but in some places that was not possible or would be too limiting. The differences are listed below.
+I endeavored to keep things the same as tabletop, but in some places that was not possible or would be too limiting. The differences are listed below.
 * [Armor Regiment Training](https://2e.aonprd.com/Feats.aspx?ID=7792) Instead of it's tabletop effect, it allows you to ignore your armor's speed penalty and still allows you to rest in armor (thanks to @AnaseSkyrider)
 * [Plant Banner](https://2e.aonprd.com/Feats.aspx?ID=7796) A planted banner cannot be destroyed, though it can be stolen. Instead of changing the banner's aura to a 40-foot burst, it becomes a 35-foot emanation.
 * [Shielded Recovery](https://2e.aonprd.com/Feats.aspx?ID=7795) Dawnsbury does not implement a free hand requirement for medicine actions other than Battle Medicine, so references to changing those requirements has been removed.
