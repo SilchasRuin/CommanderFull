@@ -108,6 +108,14 @@ public abstract partial class Commander
             "Signal up to two squadmates within the aura of your commander’s banner; one of these squadmates must be adjacent to an opponent and the other must be capable of casting a spell that deals damage. The first squadmate can attempt to Trip the adjacent opponent as a reaction. If this Trip is successful, the second squadmate can cast a ranged spell that deals damage and takes 2 or fewer actions to cast. This spell is cast as a reaction and must either target the tripped opponent or include the tripped opponent in the spell’s area.\n\nIf the second squadmate cast a spell using slots or Focus Points as part of this tactic, they are slowed 1 until the end of their next turn and do not gain a reaction when they regain actions at the start of their next turn." +
             "\n{b}Note{/b} Spells with variants, for example: Magic Missile or Scorching Ray, cannot be cast at this time.",
             [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(2).WithIllustration(MIllustrations.SlipAndSizzle);
+        yield return new ActionFeat(MFeatNames.AlleyOop,
+            "Your team excels at sharing resources and delivering them exactly where they need to be.",
+            "Signal a squadmate within the aura of your banner who is holding or wearing a consumable that can be activated as a single action (if the target is wearing a consumable, they need a free hand to toss it). That squadmate can toss their consumable to any other squadmate within the aura of your banner as a free action, and the receiving squadmate can catch and activate the consumable as a reaction. If the receiving squadmate chooses not to catch the consumable or if they don’t have a free hand to catch it with, it lands on the ground in their space.",
+            [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(1).WithIllustration(MIllustrations.AlleyOop);
+        yield return new ActionFeat(MFeatNames.TakeTheHighGround,
+                "Your ally leaps to secure the high ground with a little help from the squad.",
+                "Signal a squadmate within the aura of your commander’s banner; as a free action, that squadmate can Stride directly toward any other squadmate you are both observing. If the first squadmate ends this movement adjacent to another squadmate, the first squadmate can immediately Leap up to 25 feet as a reaction, boosted by the other squadmate. This distance increases to 40 feet if you have legendary proficiency in Warfare Lore.",
+                [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(1).WithIllustration(MIllustrations.TakeTheHighGround);
     }
 
     private static IEnumerable<QEffect> TacticsQFs(Creature cr)
@@ -193,13 +201,13 @@ public abstract partial class Commander
                     : null,
             StartOfYourPrimaryTurn = (effect, _) =>
             {
-                effect.AddGrantingOfTechnical(creature => creature.EnemyOf(effect.Owner), qfTech =>
+                effect.AddGrantingOfTechnical(creature => creature.EnemyOf(cr), qfTech =>
                 {
                     qfTech.WhenCreatureDiesAtStateCheckAsync = _ =>
                     {
-                        effect.Owner.AddQEffect(new QEffect(ExpirationCondition.CountsDownAtStartOfSourcesTurn)
+                        cr.AddQEffect(new QEffect(ExpirationCondition.CountsDownAtStartOfSourcesTurn)
                         {
-                            Source = effect.Owner,
+                            Source = cr,
                             Value = 2,
                             Id = MQEffectIds.DeathCounter
                         });
@@ -219,7 +227,7 @@ public abstract partial class Commander
         };
         yield return new QEffect
         {
-            Tag = MFeatNames.PincerAttack,
+            Tag = MFeatNames.ShieldsUp,
             ProvideActionIntoPossibilitySection = (_, section) =>
                 section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(ShieldsUp(cr))
@@ -263,6 +271,22 @@ public abstract partial class Commander
             ProvideActionIntoPossibilitySection = (_, section) =>
                 section.PossibilitySectionId == MPossibilitySectionIds.ExpertTactics
                     ? new ActionPossibility(SlipAndSizzle(cr))
+                    : null
+        };
+        yield return new QEffect
+        {
+            Tag = MFeatNames.AlleyOop,
+            ProvideActionIntoPossibilitySection = (_, section) =>
+                section.PossibilitySectionId == MPossibilitySectionIds.ExpertTactics
+                    ? new ActionPossibility(AlleyOop(cr))
+                    : null
+        };
+        yield return new QEffect
+        {
+            Tag = MFeatNames.TakeTheHighGround,
+            ProvideActionIntoPossibilitySection = (_, section) =>
+                section.PossibilitySectionId == MPossibilitySectionIds.ExpertTactics
+                    ? new ActionPossibility(TakeTheHighGround(cr))
                     : null
         };
     }
@@ -685,7 +709,6 @@ public abstract partial class Commander
                     target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                     animalReact = true;
                 }
-
                 List<Option> options = [new CancelOption(true)];
                 GameLoop.AddDirectUsageOnCreatureOptions(screenStride, options);
                 Option protStride = (await target.Battle.SendRequest(new AdvancedRequest(target,
@@ -872,7 +895,6 @@ public abstract partial class Commander
                         break;
                     }
                 }
-
                 switch (cancel)
                 {
                     case false:
@@ -1205,8 +1227,11 @@ public abstract partial class Commander
                     target.AddQEffect(RespondedToTactic(caster));
                     moved = true;
                 }
-
-                if (!moved) return;
+                if (!moved)
+                {
+                    spell.RevertRequested = true;
+                    return;
+                }
                 foreach (Creature enemy in enemies.Where(cr =>
                              targets.ChosenCreatures.Any(creature => cr.DistanceTo(creature) <= 2)))
                 {
@@ -2075,6 +2100,192 @@ public abstract partial class Commander
             });
         return tactic;
     }
+    
+    private static CombatAction AlleyOop(Creature owner)
+    {
+        return new CombatAction(owner, MIllustrations.AlleyOop, "Alley-oop", [MTraits.Commander, MTraits.Tactic, Trait.Basic],
+            "Signal a squadmate within the aura of your banner who is holding or wearing a consumable that can be activated as a single action (if the target is wearing a consumable, they need a free hand to toss it). That squadmate can toss their consumable to any other squadmate within the aura of your banner as a free action, and the receiving squadmate can catch and activate the consumable as a reaction. If the receiving squadmate chooses not to catch the consumable or if they don’t have a free hand to catch it with, it lands on the ground in their space. ",
+            new CreatureTarget(RangeKind.Ranged,
+                [
+                    new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
+                    new FriendOrSelfCreatureTargetingRequirement(), new CanTargetThrowConsumable(),
+                    new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                    new AdditionalSquadmateInBannerAuraRequirement()
+                ],
+                (_, _, _) => -2.14748365E+09f))
+            .WithActionCost(1).WithSoundEffect(SfxName.ItemGet).WithEffectOnEachTarget(async (spell, caster, target, _) =>
+            {
+                
+                List<Item> consumables = [];
+                consumables.AddRange(target.HeldItems.Where(item => IsConsumable(item, target)));
+                consumables.AddRange(target.CarriedItems.Where(item => IsConsumable(item, target)));
+                Item[] array = consumables.ToArray();
+                Item item = consumables[0];
+                switch (consumables.Count)
+                {
+                    case > 1:
+                    {
+                        RequestResult choice = await target.Battle.SendRequest(new ComboBoxInputRequest<Item>(target,
+                            "Choose a consumable to toss", target.Illustration, "Fulltext search...",
+                            array,
+                            item1 => new ComboBoxInformation(item1.Illustration, item1.Name, item1.Description ?? "",
+                                item1.ToString()), item1 => "{i}Toss "+item1.Name.ToLower()+"{/i}", "Cancel"));
+                        switch (choice.ChosenOption)
+                        {
+                            case CancelOption:
+                                spell.RevertRequested = true;
+                                return;
+                            case ComboBoxInputOption<Item> chosenOption:
+                                item = chosenOption.SelectedObject;
+                                break;
+                        }
+                        break;
+                    }
+                    case 1:
+                    {
+                        bool confirm = await target.AskForConfirmation(target.Illustration,
+                            "Would you like to toss " + item + " to an ally?", "Yes");
+                        if (!confirm)
+                        {
+                            spell.RevertRequested = true;
+                            return;
+                        }
+                        break;
+                    }
+                }
+                Creature? ally = await target.Battle.AskToChooseACreature(target,
+                    target.Battle.AllCreatures.Where(cr =>
+                        IsSquadmate(caster, cr) && new InBannerAuraRequirement().Satisfied(caster, cr)),
+                    target.Illustration, "Choose a squadmate to toss " + item + " to.", "", "Cancel");
+                if (ally == null)
+                {
+                    spell.RevertRequested = true;
+                    return;
+                }
+                target.AddQEffect(RespondedToTactic(caster));
+                if (target.CarriedItems.Contains(item))
+                    target.CarriedItems.Remove(item);
+                else if (target.HeldItems.Contains(item))
+                    target.HeldItems.Remove(item);
+                bool useDrilledReactions =
+                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                if (ally.HasFreeHand && new TacticResponseRequirement().Satisfied(caster, ally) && new ReactionRequirement().Satisfied(caster, ally))
+                {
+                    bool verify = await ally.AskForConfirmation(ally.Illustration,
+                        "Would you like to catch and use " +
+                        item +
+                        (useDrilledReactions ? " ?" : " as a reaction?"), "Yes");
+                    if (!verify)
+                    {
+                        ally.Space.CenterTile.DropItem(item);
+                        return;
+                    }
+                    ally.HeldItems.Add(item);
+                    await ally.Battle.GameLoop.StateCheck();
+                    if (item.ProvidesItemAction?.Invoke(ally, item) is ActionPossibility actionPossibility)
+                    {
+                        CombatAction action = actionPossibility.CombatAction.WithActionCost(0);
+                        await ally.Battle.GameLoop.FullCast(action);
+                    }
+                    else if (ally.Possibilities.Filter(ap =>
+                             {
+                                 if (ap.CombatAction.Item == null || ap.CombatAction.Item != item)
+                                     return false;
+                                 ap.CombatAction.ActionCost = 0;
+                                 ap.RecalculateUsability();
+                                 return true;
+                             }).CreateActions(true).FirstOrDefault() is CombatAction action)
+                    {
+                        await ally.Battle.GameLoop.FullCast(action);
+                    }
+                    else if (ally.Possibilities.Filter(ap =>
+                             {
+                                 if (ap.PossibilityGroup != "Item" && item.ScrollProperties?.Spell.CombatActionSpell != ap.CombatAction)
+                                     return false;
+                                 ap.CombatAction.ActionCost = 0;
+                                 ap.RecalculateUsability();
+                                 return true;
+                             }).CreateActions(true).FirstOrDefault() is CombatAction action2)
+                    {
+                        await ally.Battle.GameLoop.FullCast(action2);
+                    }
+                    else
+                    {
+                        ally.Space.CenterTile.DropItem(item);
+                        return;
+                    }
+                    if (!useDrilledReactions)
+                        ally.Actions.UseUpReaction();
+                    else
+                        caster.AddQEffect(DrilledReactionsExpended(caster));
+                    ally.AddQEffect(RespondedToTactic(caster));
+                }
+                else
+                    ally.Space.CenterTile.DropItem(item);
+            });
+    }
+
+    private static CombatAction TakeTheHighGround(Creature owner)
+    {
+        return new CombatAction(owner, MIllustrations.TakeTheHighGround, "Take the Heights", [MTraits.Tactic, MTraits.Commander, Trait.Basic],
+            "Signal a squadmate within the aura of your commander’s banner; as a free action, that squadmate can Stride directly toward any other squadmate you are both observing. If the first squadmate ends this movement adjacent to another squadmate, the first squadmate can immediately Leap up to 25 feet as a reaction, boosted by the other squadmate. This distance increases to 40 feet if you have legendary proficiency in Warfare Lore.",
+            new CreatureTarget(RangeKind.Ranged,
+                [
+                    new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
+                    new FriendOrSelfCreatureTargetingRequirement(),
+                    new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement()
+                ],
+                (_, _, _) => -2.14748365E+09f))
+            .WithActionCost(1).WithSoundEffect(SfxName.Footsteps)
+            .WithEffectOnEachTarget(async (spell, caster, target, _) =>
+            {
+                Creature? ally = await target.Battle.AskToChooseACreature(target,
+                    target.Battle.AllCreatures.Where(cr =>
+                        IsSquadmate(caster, cr) && caster.CanSee(cr) && target.CanSee(cr) && cr != target), target.Illustration,
+                    "Choose a squadmate to stride towards.", "stride towards", "Cancel");
+                if (ally == null || !await target.StrideAsync("Stride towards a squadmate.", strideTowards: ally.Space.CenterTile,
+                        allowCancel: true))
+                {
+                    spell.RevertRequested = true;
+                    return;
+                }
+                target.AddQEffect(RespondedToTactic(caster));
+                if (!target.IsAdjacentTo(ally) || new ReactionRequirement().Satisfied(caster, target) != Usability.Usable) return;
+                bool useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                int distance = caster.Proficiencies.Get(WarfareLoreTrait) == Proficiency.Legendary ? 8 : 5; 
+                CombatAction combatAction = CommonCombatActions.Leap(target, distance).WithActionCost(0);
+                // combatAction.Traits.Add(Trait.DoNotShowInCombatLog);
+                // combatAction.Traits.Add(Trait.DoNotShowOverheadOfActionName);
+                bool usedDrill = false;
+                bool lostReaction = false;
+                bool animalReact = false;
+                if (useDrilledReactions)
+                {
+                    caster.AddQEffect(DrilledReactionsExpended(caster));
+                    usedDrill = true;
+                }
+                else if (target.HasEffect(MQEffectIds.AnimalReaction))
+                {
+                    target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
+                    animalReact = true;
+                }
+                else
+                {
+                    target.Actions.UseUpReaction();
+                    lostReaction = true;
+                }
+                if (!await target.Battle.GameLoop.FullCast(combatAction))
+                {
+                    if (usedDrill)
+                        caster.RemoveAllQEffects(qf => qf.Id == MQEffectIds.ExpendedDrilled);
+                    if (lostReaction)
+                        target.Actions.RefundReaction();
+                    if (animalReact)
+                        target.AddQEffect(AnimalReaction(caster));
+                }
+            });
+    }
+    
 
     #endregion
 }

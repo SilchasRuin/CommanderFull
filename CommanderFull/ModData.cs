@@ -1,8 +1,10 @@
 ﻿using Dawnsbury.Audio;
+using Dawnsbury.Core;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CombatActions;
 using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Enumerations;
+using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Core.Tiles;
 using Dawnsbury.Display.Illustrations;
@@ -16,7 +18,7 @@ public abstract class ModData
     public abstract class MTraits
     {
         public static readonly Trait Commander = ModManager.RegisterTrait("Commander", new TraitProperties("Commander", true) { IsClassTrait = true });
-        public static readonly Trait Tactic = ModManager.RegisterTrait("Tactic", new TraitProperties("Tactic", true, "Tactics are special abilities that involve you signaling your allies to perform predetermined maneuvers. To use a tactic ability, you must have one or more willing allies you have instructed beforehand during your daily preparations, called squadmates. Your squadmates must also be able to perceive your signal, either when you speak or shout it (in which case the tactic action gains the auditory trait), or by physically signaling them, typically by waving your banner (in which case it gains the visual trait). While you can use multiple tactic actions in a round, a character cannot respond to more than one tactic per round, regardless of source. You can’t Ready a tactic."));
+        public static readonly Trait Tactic = ModManager.RegisterTrait("Tactic", new TraitProperties("Tactic", true, "Tactics are special abilities that involve you signaling your allies to perform predetermined maneuvers. To use a tactic ability, you must have one or more willing allies you have instructed beforehand during your daily preparations, called squadmates. Your squadmates must also be able to perceive your signal, either when you speak or shout it (in which case the tactic action gains the auditory trait), or by physically signaling them, typically by waving your banner (in which case it gains the visual trait). While you can use multiple tactic actions in a round, a character cannot respond to more than one tactic per round, regardless of source. You can't Ready a tactic."));
         public static readonly Trait TacticPre = ModManager.RegisterTrait("Tactic2", new TraitProperties("Tactic", false));
         public static readonly Trait BasicTactic = ModManager.RegisterTrait("BasicTactic", new TraitProperties("Tactic", false));
         public static readonly Trait OffensiveTactic = ModManager.RegisterTrait("OffensiveTactic", new TraitProperties("Offensive", true));
@@ -30,6 +32,10 @@ public abstract class ModData
         public static readonly Trait LegendaryTacticPre = ModManager.RegisterTrait("LegendaryTactic", new TraitProperties("Legendary", false));
         public static readonly Trait Banner = ModManager.RegisterTrait("Banner");
         public static readonly Trait Brandish = ModManager.RegisterTrait("Brandish", new TraitProperties("Brandish", true, "To use an ability that has the brandish trait, you must be holding your banner in one hand or wielding a weapon it is attached to. You cannot use free actions or reactions granted as part of a brandish action unless noted otherwise.", true));
+        public static readonly Trait MagicalBanner = ModManager.RegisterTrait("Magical Banner", new TraitProperties("Magical Banner", true, "Magical banners can be affixed to a weapon or shield and apply their benefit while being wielded or while in the inventory. A weapon or shield can have only one magical banner affixed to it at a time. A creature can benefit from the effects of only one magical banner at a time. If a creature is in the aura of two or more friendly magical banners, they gain the benefit of the higher-level one, or in the case of a tie, the banner the creature feels most loyal to.\n\nMagical banners can only grant their benefits and be used when they're in somebody's possession. They often provide a benefit to creatures within the banner's aura, which is a 30-foot emanation centered on the creature in possession of the magical banner.\n\nIf the banner is applied to a commander's banner, then any ability that modifies the commander's banner aura also modifies the aura of magical banners in the same way."));
+        public static readonly Trait BlazingBanner = ModManager.RegisterTrait("BlazingBanner", new TraitProperties("BlazingBanner", false));
+        public static readonly Trait VandalBanner = ModManager.RegisterTrait("VandalBanner", new TraitProperties("VandalBanner", false));
+        public static readonly Trait KnavesStandard = ModManager.RegisterTrait("KnavesStandard", new TraitProperties("KnavesStandard", false));
     }
     public abstract class MFeatNames
     {
@@ -82,7 +88,18 @@ public abstract class ModData
         public static readonly FeatName BuckleCutBlitz = ModManager.RegisterFeatName("FC_BuckleCutBlitz", "Buckle-cut Blitz");
         public static readonly FeatName StupefyingRaid = ModManager.RegisterFeatName("FC_StupefyingRaid", "Stupefying Raid");
         public static readonly FeatName SlipAndSizzle = ModManager.RegisterFeatName("FC_SlipAndSizzle", "Slip and Sizzle");
+        public static readonly FeatName AlleyOop = ModManager.RegisterFeatName("FC_AlleyOop", "Alley-oop");
+        public static readonly FeatName TakeTheHighGround = ModManager.RegisterFeatName("FC_TakeTheHighGround", "Take the High Ground");
         #endregion
+    }
+
+    public abstract class MFeatGroups
+    {
+        public static readonly FeatGroup OffensiveTactics = new("Offensive Tactics", 5);
+        public static readonly FeatGroup MobilityTactics = new("Mobility Tactics", 4);
+        public static readonly FeatGroup ExpertTactics = new("Expert Tactics", 3);
+        public static readonly FeatGroup MasterTactics = new("Master Tactics", 2);
+        public static readonly FeatGroup LegendaryTactics = new("Legendary Tactics", 1);
     }
     public abstract class MQEffectIds
     {
@@ -103,6 +120,7 @@ public abstract class ModData
         public static QEffectId StupefyingRaid { get; } = ModManager.RegisterEnumMember<QEffectId>("StupefyingRaid");
         public static QEffectId AudibleTactics { get; } = ModManager.RegisterEnumMember<QEffectId>("AudibleTactics");
         public static QEffectId VisualTactics { get; } = ModManager.RegisterEnumMember<QEffectId>("VisualTactics");
+        public static QEffectId MagicalBanner { get; } =  ModManager.RegisterEnumMember<QEffectId>("MagicalBanner");
         
     }
     public abstract class MTileQEffectIds
@@ -126,6 +144,7 @@ public abstract class ModData
     public abstract class MRuneKinds
     {
         public static readonly RuneKind Banner = ModManager.RegisterEnumMember<RuneKind>("Banner");
+        public static readonly RuneKind MagicalBanner = ModManager.RegisterEnumMember<RuneKind>("MagicalBanner");
     }
     public abstract class MActionIds
     {
@@ -167,5 +186,15 @@ public abstract class ModData
         public static readonly Illustration Reposition = new ModdedIllustration("FCAssets/Reposition.png");
         public static readonly Illustration Auditory = new ModdedIllustration("FCAssets/Auditory.png");
         public static readonly Illustration Visual = new ModdedIllustration("FCAssets/Visual.png");
+        public static readonly Illustration AlleyOop = new ModdedIllustration("FCAssets/AlleyOop.png");
+        public static readonly Illustration TakeTheHighGround = IllustrationName.JumpSpell;
+        public static readonly Illustration BlazingBanner = new ModdedIllustration("FCAssets/BlazingBanner.png");
+        public static readonly Illustration KnavesStandard = new ModdedIllustration("FCAssets/KnavesStandard.png");
+        public static readonly Illustration VandalsBanner = new ModdedIllustration("FCAssets/VandalsBanner.png");
+    }
+
+    public abstract class MItemGroups
+    {
+        public static readonly ItemGreaterGroup MagicalBanner = ModManager.RegisterEnumMember<ItemGreaterGroup>("MagicalBanner");
     }
 }

@@ -65,6 +65,10 @@ public abstract partial class Commander
                 [ModData.MTraits.Commander],
                 AnimalCompanionFeats.LoadAll().FirstOrDefault(feat => feat.FeatName == FeatName.AnimalCompanion)!
                     .Subfeats!.ToList())
+            .WithOnSheet(sheet =>
+            {
+                sheet.AddFeatForPurposesOfPrerequisitesOnly(FeatName.AnimalCompanion);
+            })
             .WithPermanentQEffect(null, qf =>
             {
                 qf.AfterYouTakeAction = (_, action) =>
@@ -517,6 +521,14 @@ public abstract partial class Commander
                             WhenExpires = _ =>
                             {
                                 if (radius != null) radius.Value = value;
+                            },
+                            EndOfCombat = (effect, victory) =>
+                            {
+                                if (victory && effect.Tag is Item bannerItem)
+                                {
+                                    effect.Owner.Space.CenterTile.DropItem(bannerItem);
+                                }
+                                return Task.CompletedTask;
                             }
                         };
                         planted.AddGrantingOfTechnical(cr => cr.EnemyOf(caster), qfTech =>
@@ -642,7 +654,6 @@ public abstract partial class Commander
                                 caster.CarriedItems.Remove(banner);
                             }
                         }
-
                         caster.Battle.Log(targets.ChosenTiles.Count.ToString());
                         caster.RemoveAllQEffects(effect => effect.Id == ModData.MQEffectIds.Banner);
                         caster.Occupies.AddQEffect(CommandersBannerTileEffect(7, caster, illusory));
@@ -975,7 +986,6 @@ public abstract partial class Commander
                                         .WithMinimumTargets(1).WithMustBeDistinct();
                             investigateAction.Name = "Rapid Assessment - Unrivaled Analysis";
                         }
-
                         if (self.Battle.AllCreatures.Any(cr => cr.EnemyOf(self) && cr.VisibleToHumanPlayer))
                             await self.Battle.GameLoop.FullCast(investigateAction);
                     }
@@ -1309,6 +1319,14 @@ public abstract partial class Commander
                                 WhenExpires = _ =>
                                 {
                                     if (radius != null) radius.Value = value;
+                                },
+                                EndOfCombat = (effect, victory) =>
+                                {
+                                    if (victory && effect.Tag is Item bannerItem)
+                                    {
+                                        effect.Owner.Space.CenterTile.DropItem(bannerItem);
+                                    }
+                                    return Task.CompletedTask;
                                 }
                             };
                             planted.AddGrantingOfTechnical(cr => cr.EnemyOf(caster), qfTech =>

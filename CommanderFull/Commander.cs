@@ -34,6 +34,7 @@ using Dawnsbury.Core.Tiles;
 using Dawnsbury.Display;
 using Dawnsbury.Display.Illustrations;
 using Dawnsbury.Display.Text;
+using Dawnsbury.IO;
 using Dawnsbury.Modding;
 using Dawnsbury.Mods.DawnniExpanded;
 using Dawnsbury.ThirdParty.SteamApi;
@@ -72,9 +73,12 @@ public abstract partial class Commander
                 cr.AddQEffect(tacticQf);
             });
             AddTags(tactic);
+            tactic.FeatGroup = GetFeatGroupFromTraits(tactic);
+            prereq.FeatGroup = GetFeatGroupFromTraits(prereq);
             TacticsDict.Add(tactic.Name, tactic.FeatName);
             PrereqsDict.Add(prereq.Name, prereq.FeatName);
             PrereqsToTactics.Add(prereq.FeatName, tactic.FeatName);
+            
             yield return tactic;
             yield return prereq;
         }
@@ -529,6 +533,7 @@ public abstract partial class Commander
                                         }
                                         Item basicBanner = Items.CreateNew(ItemName.Club);
                                         basicBanner.Traits.Add(MTraits.Banner);
+                                        basicBanner.Traits.Add(Trait.EncounterEphemeral);
                                         basicBanner.Name = "Simple Banner";
                                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                                         qEffect.Owner.Space.CenterTile.DropItem(basicBanner);
@@ -564,6 +569,7 @@ public abstract partial class Commander
                     {
                         Item basicBanner = Items.CreateNew(ItemName.Club);
                         basicBanner.Traits.Add(MTraits.Banner);
+                        basicBanner.Traits.Add(Trait.EncounterEphemeral);
                         basicBanner.Name = "Simple Banner";
                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                         if (!self.CarriedItems.Any(item =>
@@ -669,6 +675,17 @@ public abstract partial class Commander
     private static void AddTags(Feat feat)
     {
         feat.WithOnSheet(values => values.Tags.Add(feat.Name, feat.Traits));
+    }
+
+    private static FeatGroup GetFeatGroupFromTraits(Feat feat)
+    {
+        if (feat.Traits.Contains(MTraits.OffensiveTactic))
+            return MFeatGroups.OffensiveTactics;
+        if (feat.Traits.Contains(MTraits.MobilityTactic))
+            return MFeatGroups.MobilityTactics;
+        if (feat.Traits.Contains(MTraits.ExpertTactic))
+            return MFeatGroups.ExpertTactics;
+        return feat.Traits.Contains(MTraits.MasterTactic) ? MFeatGroups.MasterTactics : MFeatGroups.LegendaryTactics;
     }
 
     private static CombatAction ChooseDrilledReactions(Creature owner)
@@ -969,7 +986,7 @@ public abstract partial class Commander
                     if (dedication) return;
                     friend.AddQEffect(new QEffect("Commander's Banner",
                         "You gain a +1 status bonus to Will saves and DCs against fear effects.",
-                        ExpirationCondition.Ephemeral, qfBanner.Owner)
+                        ExpirationCondition.Ephemeral, qfBanner.Owner, MIllustrations.Banner)
                     {
                         CountsAsABuff = true,
                         BonusToDefenses = (_, combatAction, defense) => combatAction != null && combatAction.HasTrait(Trait.Fear) &&
@@ -1002,7 +1019,7 @@ public abstract partial class Commander
                     if (dedication) return;
                     friend.AddQEffect(new QEffect("Commander's Banner",
                         "You gain a +1 status bonus to Will saves and DCs against fear effects.",
-                        ExpirationCondition.Ephemeral, source)
+                        ExpirationCondition.Ephemeral, source, MIllustrations.Banner)
                     {
                         CountsAsABuff = true,
                         BonusToDefenses = (_, combatAction, defense) =>
@@ -1125,6 +1142,23 @@ public abstract partial class Commander
             commander.Name + "'s Banner");
     }
 
+    internal static bool HasConsumableToToss(Creature target)
+    {
+        return (target.CarriedItems.Any(item => IsConsumable(item, target)) && target.HasFreeHand)
+               || target.HeldItems.Any(item => IsConsumable(item, target));
+    }
+
+    internal static bool IsConsumable(Item item, Creature target)
+    {
+        return item.HasTrait(Trait.Consumable) && (item.WhenYouDrink != null ||
+                                                   item.HasTrait(Trait.Bomb) ||
+                                                   item.ScrollProperties?.Spell.CombatActionSpell.ActionCost < 2 ||
+                                                   item.ProvidesItemAction?.Invoke(target, item) is ActionPossibility
+                                                   {
+                                                       CombatAction.ActionCost: < 2
+                                                   });
+    }
+
     internal static bool AddBannerToInventory(Inventory inventory, Item banner)
     {
         if (banner.BaseItemName == BannerItem.Banner &&
@@ -1147,37 +1181,81 @@ public abstract partial class Commander
         }
         else if ((inventory.LeftHand?.StoredItems.Any(item => item.BaseItemName == banner.BaseItemName) ?? false) ||
                  (inventory.RightHand?.StoredItems.Any(item => item.BaseItemName == banner.BaseItemName) ?? false) ||
-                 (inventory.Backpack.Any(item =>
-                     item?.StoredItems.Any(item1 => item1.BaseItemName == banner.BaseItemName) ?? false)))
+                 inventory.Backpack.Any(item =>
+                     item?.StoredItems.Any(item1 => item1.BaseItemName == banner.BaseItemName) ?? false))
+        {
+        }
+        else if (CampaignState.Instance != null && CampaignState.Instance.CommonLoot.Any(item => item.Runes.Any(rune => rune.BaseItemName == banner.BaseItemName)
+                 || item.BaseItemName == banner.BaseItemName || item.StoredItems.Any(item1 => item1.BaseItemName == banner.BaseItemName) 
+                 || item.StoredItems.Any(item1 =>
+                     item1.Runes.Any(rune => rune.BaseItemName == banner.BaseItemName))))
         {
         }
         else if ((inventory.LeftHand == null || inventory.LeftHand.BaseItemName != banner.BaseItemName) &&
                  (inventory.RightHand == null || inventory.RightHand.BaseItemName != banner.BaseItemName) &&
                  !inventory.Backpack.Any(item => item != null && item.BaseItemName == banner.BaseItemName))
         {
-            if (inventory.RightHand == null && banner.ItemName != BannerItem.Banner &&
-                (inventory.LeftHand == null || !inventory.LeftHand.HasTrait(Trait.TwoHanded)))
+            if (inventory.CanBackpackFit(banner, 0))
             {
-                inventory.RightHand = banner;
+                inventory.AddAtEndOfBackpack(banner);
             }
-            else if (inventory.LeftHand == null && banner.ItemName != BannerItem.Banner)
-            {
-                inventory.LeftHand = banner;
-            }
-            else
-            {
-                if (inventory.CanBackpackFit(banner, 0))
-                {
-                    inventory.AddAtEndOfBackpack(banner);
-                }
-            }
-
             return true;
         }
-
         return false;
     }
-
+    
+    internal static int CountBanners(Inventory inventory, ItemName banner)
+    {
+        var count = 0;
+        count += inventory.LeftHand?.Runes.Count(rune => rune.BaseItemName == banner) ?? 0;
+        count += inventory.RightHand?.Runes.Count(rune => rune.BaseItemName == banner) ?? 0;
+        count += inventory.LeftHand?.StoredItems.Count(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? 0;
+        count += inventory.RightHand?.StoredItems.Count(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? 0;
+        count += inventory.Backpack.Count(item => item?.Runes.Any(rune => rune.BaseItemName == banner) ?? false);
+        count += inventory.Backpack.Count(item => item?.StoredItems.Any(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner)) ?? false);
+        count += inventory.Backpack.Count(item => item?.BaseItemName == banner);
+        count += inventory.Backpack.Count(item => item?.StoredItems.Any(item1 => item1.BaseItemName == banner) ?? false);
+        return count;
+    }
+    internal static void RemoveBanners(Inventory inventory, ItemName banner)
+    {
+        if (inventory.Backpack.Any(item => item?.BaseItemName == banner))
+        {
+            inventory.Backpack.RemoveAll(item => item?.BaseItemName == banner);
+        }
+        else if (inventory.Backpack.Any(item => item?.Runes.Any(rune => rune.BaseItemName == banner) ?? false))
+        {
+            inventory.Backpack.FirstOrDefault(item => item?.Runes.Any(rune => rune.BaseItemName == banner) ?? false)?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
+        }
+        else if (inventory.LeftHand?.Runes.Any(rune => rune.BaseItemName == banner) ?? false)
+        {
+            inventory.LeftHand.Runes.RemoveAll(rune => rune.BaseItemName == banner);
+        }
+        else if (inventory.RightHand?.Runes.Any(rune => rune.BaseItemName == banner) ?? false)
+        {
+            inventory.RightHand.Runes.RemoveAll(rune => rune.BaseItemName == banner);
+        }
+        else if (inventory.Backpack.Any(item => item?.StoredItems.Any(item1 => item1.BaseItemName == banner) ?? false))
+        {
+            inventory.Backpack.FirstOrDefault(item => item?.StoredItems.Any(item1 => item1?.BaseItemName == banner) ?? false)?.StoredItems.RemoveAll(rune => rune.BaseItemName == banner);
+        }
+        else if (inventory.Backpack.Any(item =>
+                     item?.StoredItems.Any(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner)) ?? false))
+        {
+            inventory.Backpack.FirstOrDefault(item =>
+                item?.StoredItems.Any(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner)) ?? false)
+                ?.StoredItems.FirstOrDefault(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner))
+                ?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
+        }
+        else if (inventory.LeftHand?.StoredItems.Any(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? false)
+        {
+            inventory.LeftHand.StoredItems.FirstOrDefault(item => item.Runes.Any(rune => rune.BaseItemName == banner))?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
+        }
+        else if (inventory.RightHand?.StoredItems.Any(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? false)
+        {
+            inventory.RightHand.StoredItems.FirstOrDefault(item => item.Runes.Any(rune => rune.BaseItemName == banner))?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
+        }
+    }
     #endregion
 
     #region Extra Targeting Requirement Classes
@@ -1291,6 +1369,30 @@ public abstract partial class Commander
         {
             bool canUse = CreateSpells(target).CreateActions(true).Count != 0;
             return !canUse ? Usability.NotUsableOnThisCreature(target.Name + " cannot cast a damaging spell.") : Usability.Usable;
+        }
+    }
+
+    public class CanTargetThrowConsumable : CreatureTargetingRequirement
+    {
+        public override Usability Satisfied(Creature source, Creature target)
+        {
+            if (IsSquadmate(source, target) && HasConsumableToToss(target))
+                return Usability.Usable;
+            return IsSquadmate(source, target) ? Usability.NotUsableOnThisCreature("Your squadmate does not have a legal item or does not have a free hand to toss.") : Usability.NotUsableOnThisCreature("This creature is not a squadmate.");
+        }
+    }
+    public class AdditionalSquadmateInBannerAuraRequirement : CreatureTargetingRequirement
+    {
+        public override Usability Satisfied(Creature source, Creature target)
+        {
+            Creature? bannerHolder = source.Battle.AllCreatures.FirstOrDefault(cr => IsMyBanner(source, cr));
+            Tile? bannerTile = source.Battle.Map.AllTiles.FirstOrDefault(tile => IsMyBanner(source, tile));
+            Tile? banner = bannerHolder != null ? bannerHolder.Occupies : bannerTile;
+            if (banner != null && target.Battle.AllCreatures.Any(cr => IsSquadmate(source, cr) && cr != target && cr.DistanceTo(banner) <= GetBannerRadius(source)))
+            {
+                return Usability.Usable;
+            }
+            return Usability.NotUsableOnThisCreature("There are no other squadmates within the banner's aura.");
         }
     }
 
