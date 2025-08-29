@@ -50,13 +50,17 @@ public abstract partial class Commander
     public static Dictionary<string, FeatName> TacticsDict { get; } = [];
     public static Dictionary<string, FeatName> PrereqsDict { get; } = [];
     public static Dictionary<FeatName, FeatName> PrereqsToTactics { get; } = [];
-    public static IEnumerable<Feat> LoadAll()
+    public static IEnumerable<Feat> LoadAll() 
     { 
         foreach (Feat tactic in LoadTactics())
         {
             int level = tactic.Traits.Contains(MTraits.LegendaryTactic) ? 19 : tactic.Traits.Contains(MTraits.MasterTactic) ? 15 : tactic.Traits.Contains(MTraits.ExpertTactic) ? 7 : 1;
             Feat prereq = CreatePrereqTacticsBasic((ActionFeat)tactic, level);
             prereq.WithIllustration(tactic.Illustration);
+            if (prereq.Traits.Any(trait => trait == MTraits.ExpertTactic)) 
+                prereq.WithPrerequisite(values => values.HasFeat(MFeatNames.Commander) || values.HasFeat(MFeatNames.TacticalExcellence8), "You must be a Commander or have the level 8 Tactical Excellence feat to select this tactic.");
+            if (prereq.Traits.Any(trait => trait == MTraits.MasterTactic || trait == MTraits.LegendaryTactic))
+                prereq.WithPrerequisite(values => values.HasFeat(MFeatNames.Commander), "You must be a Commander to select this tactic.");
             tactic.WithPrerequisite(values => values.HasFeat(prereq),
                 "You must have this tactic in your folio to select it.");
             tactic.WithOnCreature(cr =>
@@ -889,17 +893,35 @@ public abstract partial class Commander
                         }
                         else
                         {
-                            IEnumerable<Tile> tiles2 = caster.Battle.Map.AllTiles.Where(tile =>
-                                tile.IsTrulyGenuinelyFreeTo(caster) && tile.DistanceTo(caster.Occupies) <= 1 &&
-                                tile.IsAdjacentTo(target.Occupies));
-                            Tile[] enumerable = tiles2 as Tile[] ?? tiles2.ToArray();
-                            Tile moveTo3 = (enumerable.ToList().GetRandomForAi() ?? enumerable.FirstOrDefault())!;
-                            await caster.MoveTo(moveTo3, null,
-                                new MovementStyle()
-                                {
-                                    ForcedMovement = true, Shifting = true, ShortestPath = true,
-                                    MaximumSquares = 100
-                                });
+                            if (target.OwningFaction != caster.Battle.You)
+                            {
+                                IEnumerable<Tile> tiles2 = caster.Battle.Map.AllTiles.Where(tile =>
+                                    tile.IsTrulyGenuinelyFreeTo(caster) && tile.DistanceTo(caster.Occupies) <= 1 &&
+                                    tile.IsAdjacentTo(target.Occupies));
+                                Tile[] enumerable = tiles2 as Tile[] ?? tiles2.ToArray();
+                                Tile moveTo3 = (enumerable.ToList().GetRandomForAi() ?? enumerable.FirstOrDefault())!;
+                                await caster.MoveTo(moveTo3, null,
+                                    new MovementStyle()
+                                    {
+                                        ForcedMovement = true, Shifting = true, ShortestPath = true,
+                                        MaximumSquares = 100
+                                    });
+                            }
+                            else
+                            {
+                                IEnumerable<Tile> tiles2 = caster.Battle.Map.AllTiles.Where(tile =>
+                                    tile.IsTrulyGenuinelyFreeTo(caster) && tile.DistanceTo(caster.Occupies) <= 1 &&
+                                    tile.IsAdjacentTo(target.Occupies));
+                                Tile moveTo4 = (await target.Battle.AskToChooseATile(caster, tiles2,
+                                    MIllustrations.Reposition,
+                                    "Choose where to reposition " + caster.Name + ".", "", false, false))!;
+                                await caster.MoveTo(moveTo4, null,
+                                    new MovementStyle()
+                                    {
+                                        ForcedMovement = true, Shifting = true, ShortestPath = true,
+                                        MaximumSquares = 100
+                                    });
+                            }
                         }
 
                         break;
@@ -1203,58 +1225,18 @@ public abstract partial class Commander
         }
         return false;
     }
-    
-    internal static int CountBanners(Inventory inventory, ItemName banner)
+
+    internal static bool CanTakeReaction(bool useDrilledReactions, Creature target, Creature? drilledTarget, Creature caster)
     {
-        var count = 0;
-        count += inventory.LeftHand?.Runes.Count(rune => rune.BaseItemName == banner) ?? 0;
-        count += inventory.RightHand?.Runes.Count(rune => rune.BaseItemName == banner) ?? 0;
-        count += inventory.LeftHand?.StoredItems.Count(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? 0;
-        count += inventory.RightHand?.StoredItems.Count(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? 0;
-        count += inventory.Backpack.Count(item => item?.Runes.Any(rune => rune.BaseItemName == banner) ?? false);
-        count += inventory.Backpack.Count(item => item?.StoredItems.Any(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner)) ?? false);
-        count += inventory.Backpack.Count(item => item?.BaseItemName == banner);
-        count += inventory.Backpack.Count(item => item?.StoredItems.Any(item1 => item1.BaseItemName == banner) ?? false);
-        return count;
+        if (target.HasEffect(QEffectId.CannotTakeReactions)) return false;
+        return (useDrilledReactions && drilledTarget == target) ||
+               target.Actions.CanTakeReaction() || AnimalReactionAvailable(caster, target);
     }
-    internal static void RemoveBanners(Inventory inventory, ItemName banner)
+    internal static bool CanTakeReaction(bool useDrilledReactions, Creature target, Creature caster)
     {
-        if (inventory.Backpack.Any(item => item?.BaseItemName == banner))
-        {
-            inventory.Backpack.RemoveAll(item => item?.BaseItemName == banner);
-        }
-        else if (inventory.Backpack.Any(item => item?.Runes.Any(rune => rune.BaseItemName == banner) ?? false))
-        {
-            inventory.Backpack.FirstOrDefault(item => item?.Runes.Any(rune => rune.BaseItemName == banner) ?? false)?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
-        }
-        else if (inventory.LeftHand?.Runes.Any(rune => rune.BaseItemName == banner) ?? false)
-        {
-            inventory.LeftHand.Runes.RemoveAll(rune => rune.BaseItemName == banner);
-        }
-        else if (inventory.RightHand?.Runes.Any(rune => rune.BaseItemName == banner) ?? false)
-        {
-            inventory.RightHand.Runes.RemoveAll(rune => rune.BaseItemName == banner);
-        }
-        else if (inventory.Backpack.Any(item => item?.StoredItems.Any(item1 => item1.BaseItemName == banner) ?? false))
-        {
-            inventory.Backpack.FirstOrDefault(item => item?.StoredItems.Any(item1 => item1?.BaseItemName == banner) ?? false)?.StoredItems.RemoveAll(rune => rune.BaseItemName == banner);
-        }
-        else if (inventory.Backpack.Any(item =>
-                     item?.StoredItems.Any(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner)) ?? false))
-        {
-            inventory.Backpack.FirstOrDefault(item =>
-                item?.StoredItems.Any(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner)) ?? false)
-                ?.StoredItems.FirstOrDefault(item1 => item1.Runes.Any(rune => rune.BaseItemName == banner))
-                ?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
-        }
-        else if (inventory.LeftHand?.StoredItems.Any(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? false)
-        {
-            inventory.LeftHand.StoredItems.FirstOrDefault(item => item.Runes.Any(rune => rune.BaseItemName == banner))?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
-        }
-        else if (inventory.RightHand?.StoredItems.Any(item => item.Runes.Any(rune => rune.BaseItemName == banner)) ?? false)
-        {
-            inventory.RightHand.StoredItems.FirstOrDefault(item => item.Runes.Any(rune => rune.BaseItemName == banner))?.Runes.RemoveAll(rune => rune.BaseItemName == banner);
-        }
+        if (target.HasEffect(QEffectId.CannotTakeReactions)) return false;
+        return useDrilledReactions ||
+               target.Actions.CanTakeReaction() || AnimalReactionAvailable(caster, target);
     }
     #endregion
 
@@ -1269,6 +1251,11 @@ public abstract partial class Commander
             {
                 return Usability.NotUsableOnThisCreature(
                     "You have used your Drilled Reactions already, and your target doesn't have a reaction available.");
+            }
+            if (target.HasEffect(QEffectId.CannotTakeReactions))
+            {
+                return Usability.NotUsableOnThisCreature(
+                    "This creature cannot take reactions.");
             }
             return Usability.Usable;
         }

@@ -37,8 +37,11 @@ public class ModLoader
         {
             ModManager.AddFeat(feat);
         }
+
         Commander.LoadGenericFeats();
+
         #region deceptive tactics
+
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
             if (!action.Owner.HasFeat(MFeatNames.DeceptiveTactics) ||
@@ -59,7 +62,8 @@ public class ModLoader
                                 Trait.Basic
                             ], "[this condition has no description]", (Target)Target.Self())
                         .WithActionId(ActionId.CreateADiversion)
-                        .WithActiveRollSpecification(new ActiveRollSpecification(TaggedChecks.SkillCheck(Skill.Deception, ExplorationActivities.ModData.Skills.WarfareLore),
+                        .WithActiveRollSpecification(new ActiveRollSpecification(
+                            TaggedChecks.SkillCheck(Skill.Deception, ExplorationActivities.ModData.Skills.WarfareLore),
                             TaggedChecks.DefenseDC(Defense.Perception))), chosenCreature);
                     CheckBreakdownResult breakdownResult = new CheckBreakdownResult(breakdown, roll);
                     string str1 = breakdown.DescribeWithFinalRollTotal(breakdownResult);
@@ -80,7 +84,8 @@ public class ModLoader
                         string str4 = d20Roll.ToString() + breakdown.TotalCheckBonus.WithPlus();
                         local.AppendFormatted(str4);
                         interpolatedStringHandler.AppendLiteral("=");
-                        interpolatedStringHandler.AppendFormatted<int>(breakdownResult.D20Roll + breakdown.TotalCheckBonus);
+                        interpolatedStringHandler.AppendFormatted<int>(breakdownResult.D20Roll +
+                                                                       breakdown.TotalCheckBonus);
                         interpolatedStringHandler.AppendLiteral(" vs. ");
                         interpolatedStringHandler.AppendFormatted<int>(breakdown.TotalDC);
                         interpolatedStringHandler.AppendLiteral(").");
@@ -117,7 +122,8 @@ public class ModLoader
                         string str6 = d20Roll.ToString() + breakdown.TotalCheckBonus.WithPlus();
                         local.AppendFormatted(str6);
                         interpolatedStringHandler.AppendLiteral("=");
-                        interpolatedStringHandler.AppendFormatted<int>(breakdownResult.D20Roll + breakdown.TotalCheckBonus);
+                        interpolatedStringHandler.AppendFormatted<int>(breakdownResult.D20Roll +
+                                                                       breakdown.TotalCheckBonus);
                         interpolatedStringHandler.AppendLiteral(" vs. ");
                         interpolatedStringHandler.AppendFormatted<int>(breakdown.TotalDC);
                         interpolatedStringHandler.AppendLiteral(").");
@@ -126,32 +132,49 @@ public class ModLoader
                         string logDetails = str1;
                         creature.Overhead("diversion failed", red, log, "Create a diversion", logDetails);
                     }
+
                     chosenCreature?.AddQEffect(new QEffect()
                     {
-                        BonusToDefenses = ((Func<QEffect, CombatAction, Defense, Bonus?>)((effect, combatAction, defense) =>
-                        {
-                            if (defense != Defense.Perception || combatAction is not { ActionId: ActionId.CreateADiversion } ||
-                                combatAction.Owner != caster)
-                                return null;
-                            if (caster.HasEffect(QEffectId.ConfabulatorLegendary))
-                                return null;
-                            if (caster.HasEffect(QEffectId.ConfabulatorMaster))
-                                return new Bonus(1, BonusType.Circumstance, "Fool me twice... (Confabulator master)");
-                            return caster.HasEffect(QEffectId.ConfabulatorExpert)
-                                ? new Bonus(2, BonusType.Circumstance, "Fool me twice... (Confabulator)")
-                                : new Bonus(4, BonusType.Circumstance, "Fool me twice...");
-                        }))!
+                        BonusToDefenses =
+                            ((Func<QEffect, CombatAction, Defense, Bonus?>)((effect, combatAction, defense) =>
+                            {
+                                if (defense != Defense.Perception || combatAction is not
+                                        { ActionId: ActionId.CreateADiversion } ||
+                                    combatAction.Owner != caster)
+                                    return null;
+                                if (caster.HasEffect(QEffectId.ConfabulatorLegendary))
+                                    return null;
+                                if (caster.HasEffect(QEffectId.ConfabulatorMaster))
+                                    return new Bonus(1, BonusType.Circumstance,
+                                        "Fool me twice... (Confabulator master)");
+                                return caster.HasEffect(QEffectId.ConfabulatorExpert)
+                                    ? new Bonus(2, BonusType.Circumstance, "Fool me twice... (Confabulator)")
+                                    : new Bonus(4, BonusType.Circumstance, "Fool me twice...");
+                            }))!
                     });
                 }
+
                 return Task.CompletedTask;
             });
         });
         AllFeats.GetFeatByFeatName(FeatName.LengthyDiversion).Prerequisites
             .RemoveAll(req => req.Description.Contains("trained in Deception"));
-        AllFeats.GetFeatByFeatName(FeatName.LengthyDiversion).WithPrerequisite(values => values.GetProficiency(Trait.Deception) >= Proficiency.Trained || (values.HasFeat(MFeatNames.DeceptiveTactics) && values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Trained), "You must be trained in Deception.");
-        AllFeats.GetFeatByFeatName(FeatName.Confabulator).Prerequisites.Remove(AllFeats.GetFeatByFeatName(FeatName.Confabulator).Prerequisites.FirstOrDefault(pre => pre.Description == "You must be expert in Deception.")!);
-        AllFeats.GetFeatByFeatName(FeatName.Confabulator).WithPrerequisite(values => values.GetProficiency(Trait.Deception) >= Proficiency.Expert || (values.HasFeat(MFeatNames.DeceptiveTactics) && values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Expert), "You must be expert in Deception.");
+        AllFeats.GetFeatByFeatName(FeatName.LengthyDiversion).WithPrerequisite(
+            values => values.GetProficiency(Trait.Deception) >= Proficiency.Trained ||
+                      (values.HasFeat(MFeatNames.DeceptiveTactics) &&
+                       values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Trained),
+            "You must be trained in Deception.");
+        AllFeats.GetFeatByFeatName(FeatName.Confabulator).Prerequisites.Remove(AllFeats
+            .GetFeatByFeatName(FeatName.Confabulator).Prerequisites
+            .FirstOrDefault(pre => pre.Description == "You must be expert in Deception.")!);
+        AllFeats.GetFeatByFeatName(FeatName.Confabulator).WithPrerequisite(
+            values => values.GetProficiency(Trait.Deception) >= Proficiency.Expert ||
+                      (values.HasFeat(MFeatNames.DeceptiveTactics) &&
+                       values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >= Proficiency.Expert),
+            "You must be expert in Deception.");
+
         #endregion
+
         //protective screen
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
@@ -168,20 +191,26 @@ public class ModLoader
             {
                 cr.AddQEffect(new QEffect()
                 {
-                    ProvideActionIntoPossibilitySection = (qf, possibility) => possibility.PossibilitySectionId == PossibilitySectionId.AttackManeuvers ? new ActionPossibility(Commander.Reposition(qf.Owner)) : null
+                    ProvideActionIntoPossibilitySection = (qf, possibility) =>
+                        possibility.PossibilitySectionId == PossibilitySectionId.AttackManeuvers
+                            ? new ActionPossibility(Commander.Reposition(qf.Owner))
+                            : null
                 });
             });
         }
+
         //tactics visual and auditory
         ModManager.RegisterActionOnEachActionPossibility(action =>
         {
             if (action.HasTrait(MTraits.Brandish)) action.Traits.Add(Trait.Visual);
-            if (action.HasTrait(MTraits.Tactic) && !action.HasTrait(MTraits.Brandish) && action.Owner.HasEffect(MQEffectIds.AudibleTactics))
+            if (action.HasTrait(MTraits.Tactic) && !action.HasTrait(MTraits.Brandish) &&
+                action.Owner.HasEffect(MQEffectIds.AudibleTactics))
                 action.Traits.Add(Trait.Auditory);
-            if (action.HasTrait(MTraits.Tactic) && !action.HasTrait(MTraits.Brandish) && action.Owner.HasEffect(MQEffectIds.VisualTactics))
+            if (action.HasTrait(MTraits.Tactic) && !action.HasTrait(MTraits.Brandish) &&
+                action.Owner.HasEffect(MQEffectIds.VisualTactics))
                 action.Traits.Add(Trait.Visual);
             if (action.Name != "Recall Weakness") return;
-            action.Illustration= IllustrationName.NarratorBook;
+            action.Illustration = IllustrationName.NarratorBook;
         });
         //modify mod feats
         LoadOrder.WhenFeatsBecomeLoaded += () =>
@@ -195,6 +224,7 @@ public class ModLoader
                                values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >=
                                Proficiency.Trained), "You must be trained in Deception.");
             }
+
             if (ModManager.TryParse("DawnniEx", out Trait _))
             {
                 FeatRecallWeakness.CombatAssessment.Traits = [];
@@ -207,24 +237,24 @@ public class ModLoader
             if (!action.Owner.HasFeat(MFeatNames.ShieldedRecovery)) return;
             Creature self = action.Owner;
             bool medic = self.HasEffect(QEffectId.Medic);
-            action.Target = Target.AdjacentFriendOrSelf().WithAdditionalConditionOnTargetCreature(
-                (a, d) =>
-                {
-                    if (!a.HasFreeHand && !a.HeldItems.Any(item => item.HasTrait(Trait.Shield)))
-                        return Usability.CommonReasons.NoFreeHandForManeuver;
-                    if (d.Damage == 0)
-                        return Usability.NotUsableOnThisCreature("healthy");
-                    return d.PersistentUsedUpResources.UsedUpActions.Contains("BattleMedicineFrom:" + self.Name) &&
-                           (!medic || a.HasEffect(QEffectId.BattleMedicineImmunityBypassUsedThisEncounter) ||
-                            self.Proficiencies.Get(Trait.Medicine) < Proficiency.Master &&
-                            a.PersistentUsedUpResources.UsedUpActions.Contains("BattleMedicineImmunityBypassUsed"))
-                        ? Usability.NotUsableOnThisCreature("immune")
-                        : Usability.Usable;
-                });
+            action.Target = Target.AdjacentFriendOrSelf().WithAdditionalConditionOnTargetCreature((a, d) =>
+            {
+                if (!a.HasFreeHand && !a.HeldItems.Any(item => item.HasTrait(Trait.Shield)))
+                    return Usability.CommonReasons.NoFreeHandForManeuver;
+                if (d.Damage == 0)
+                    return Usability.NotUsableOnThisCreature("healthy");
+                return d.PersistentUsedUpResources.UsedUpActions.Contains("BattleMedicineFrom:" + self.Name) &&
+                       (!medic || a.HasEffect(QEffectId.BattleMedicineImmunityBypassUsedThisEncounter) ||
+                        self.Proficiencies.Get(Trait.Medicine) < Proficiency.Master &&
+                        a.PersistentUsedUpResources.UsedUpActions.Contains("BattleMedicineImmunityBypassUsed"))
+                    ? Usability.NotUsableOnThisCreature("immune")
+                    : Usability.Usable;
+            });
             action.Description = action.Description.Insert(action.Description.IndexOf('.'), " or be wielding a shield");
-        }); 
+        });
         //stat block modification
-        int abilitiesIndex = CreatureStatblock.CreatureStatblockSectionGenerators.FindIndex(gen => gen.Name == "Abilities");
+        int abilitiesIndex =
+            CreatureStatblock.CreatureStatblockSectionGenerators.FindIndex(gen => gen.Name == "Abilities");
         CreatureStatblock.CreatureStatblockSectionGenerators.Insert(abilitiesIndex,
             new CreatureStatblockSectionGenerator("Prepared tactics", TacticsStatBlock.DescribePreparedTactics));
         //text modification for commander and battle planner
@@ -232,12 +262,12 @@ public class ModLoader
         {
             Feat? commanderClass = AllFeats.All.FirstOrDefault(ft => ft.FeatName == MFeatNames.Commander);
             commanderClass!.RulesText = commanderClass.RulesText.Replace("Ability boosts", "Attribute boosts");
-            Feat? battlePlanner = AllFeats.All.FirstOrDefault(feat => feat.FeatName == ExplorationActivities.ModData.FeatNames.BattlePlanner);
+            Feat? battlePlanner = AllFeats.GetFeatByFeatNameOrStringOptional(ExplorationActivities.ModData.FeatNames.BattlePlanner, "BattlePlanner") ??
+                                  AllFeats.All.FirstOrDefault(feat => feat.FeatName == ExplorationActivities.ModData.FeatNames.BattlePlanner || feat.Name == "Battle Planner");
             if (battlePlanner != null)
-                battlePlanner.RulesText +=
-                    $"\n\n{{b}}Special{{/b}} If you are a Commander with the level 3 {Commander.UseCreatedTooltip("warfare expertise")} class feature, you instead gain this effect: If you or one of your allies has taken the scout exploration activity, you reroll your initiative and take the higher value.";
+                battlePlanner.RulesText = battlePlanner.RulesText.Insert(battlePlanner.RulesText.LastIndexOf(battlePlanner.RulesText.Last()) ,$"\n\n{{b}}Special{{/b}} If you are a Commander with the level 3 {Commander.UseCreatedTooltip("warfare expertise")} class feature, you instead gain this effect: If you or one of your allies has taken the scout exploration activity, you reroll your initiative and take the higher value.");
         };
-    }
+}
     public static AdvancedRequest NewSleepRequest(int sleepTime)
     {
         Type? sleepRequest = typeof(AdvancedRequest).Assembly.GetType("Dawnsbury.Core.Coroutines.Requests.SleepRequest");

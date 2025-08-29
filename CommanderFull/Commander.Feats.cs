@@ -452,9 +452,11 @@ public abstract partial class Commander
                             "Banner", caster.Level).With(cr =>
                         {
                             cr.Traits.Add(ModData.MTraits.Banner);
+                            cr.Traits.Add(Trait.UnderneathCreatures);
                             AuraAnimation auraAnimation = cr.AnimationData.AddAuraAnimation(
                                 IllustrationName.BlessCircle,
                                 GetBannerRadius(caster));
+                            auraAnimation.Color = Color.Coral;
                         });
                         QEffect? radius = caster.FindQEffect(ModData.MQEffectIds.BannerRadius);
                         int value = 6;
@@ -1220,14 +1222,7 @@ public abstract partial class Commander
             {
                 qf.ProvideStrikeModifier = item =>
                 {
-                    int? distance = ModManager.TryParse("Thrown30Feet", out Trait thrown30) && item.HasTrait(thrown30)
-                        ?
-                        6
-                        : item.HasTrait(Trait.Thrown20Feet)
-                            ? 4
-                            : item.HasTrait(Trait.Thrown10Feet)
-                                ? 2
-                                : null;
+                    int? distance = item.WeaponProperties?.RangeIncrement;
                     if (distance == null) return null;
                     CombatAction claimTheField = new CombatAction(qf.Owner,
                             new SideBySideIllustration(item.Illustration, ModData.MIllustrations.PlantBanner),
@@ -1472,13 +1467,13 @@ public abstract partial class Commander
                             caster.RemoveAllQEffects(effect => effect.Id == ModData.MQEffectIds.Banner);
                             thrownTo.AddQEffect(CommandersBannerTileEffect(7, caster, illusory));
                             caster.AddQEffect(planted);
-                            illusory.DescriptionFulltext = "This is " + caster.Name + "'s banner.";
+                            illusory.Traits.Add(Trait.UnderneathCreatures);
                             await caster.Battle.GameLoop.StateCheck();
                             caster.Battle.SpawnIllusoryCreature(illusory, thrownTo);
                             AuraAnimation auraAnimation = illusory.AnimationData.AddAuraAnimation(
                                 IllustrationName.BlessCircle,
                                 GetBannerRadius(caster));
-                            auraAnimation.Color = Color.DarkKhaki;
+                            auraAnimation.Color = Color.Coral;
                             var temp = (1 + caster.Level / 4) * 4;
                             foreach (Creature ally in targets.ChosenCreatures)
                             {
@@ -1542,9 +1537,7 @@ public abstract partial class Commander
                                 ally.AddQEffect(newQf);
                             }
                         });
-                    return item.HasTrait(ModData.MTraits.Banner) && (item.HasTrait(Trait.Thrown20Feet) ||
-                                                                     item.HasTrait(Trait.Thrown10Feet) ||
-                                                                     item.HasTrait(thrown30))
+                    return item.HasTrait(ModData.MTraits.Banner) && item.WeaponProperties is { Throwable: true }
                         ? claimTheField
                         : null;
                 };

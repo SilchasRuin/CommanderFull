@@ -309,15 +309,12 @@ public abstract partial class Commander
                 Creature? drilledTarget = DrilledTarget(targets, caster);
                 Creature? bannerHolder = caster.Battle.AllCreatures.FirstOrDefault(cr => IsMyBanner(caster, cr));
                 Tile? bannerTile = caster.Battle.Map.AllTiles.FirstOrDefault(tile => IsMyBanner(caster, tile));
-                bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                bool useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 bool usedDrill = false;
                 bool lostReaction = false;
                 bool animalReact = false;
                 if (bannerHolder != null && targets.ChosenCreatures.Contains(bannerHolder) &&
-                    new TacticResponseRequirement().Satisfied(caster, bannerHolder) == Usability.Usable && (
-                        (!useDrilledReactions && drilledTarget?.Name == bannerHolder.Name) ||
-                        bannerHolder.Actions.CanTakeReaction() || AnimalReactionAvailable(caster, bannerHolder)))
+                    new TacticResponseRequirement().Satisfied(caster, bannerHolder) == Usability.Usable && CanTakeReaction(useDrilledReactions, bannerHolder, drilledTarget, caster))
                 {
                     if (useDrilledReactions && drilledTarget?.Name == bannerHolder.Name)
                     {
@@ -356,13 +353,11 @@ public abstract partial class Commander
                     bool usedDrill2 = false;
                     bool lostReaction2 = false;
                     bool animalReact2 = false;
-                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable || (
-                            (useDrilledReactions || drilledTarget?.Name != target.Name) &&
-                            !target.Actions.CanTakeReaction() && !AnimalReactionAvailable(caster, target)))
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable ||
+                        !CanTakeReaction(useDrilledReactions, target, drilledTarget, caster))
                     {
                         continue;
                     }
-
                     if (useDrilledReactions && drilledTarget?.Name == target.Name)
                     {
                         caster.AddQEffect(DrilledReactionsExpended(caster));
@@ -405,7 +400,8 @@ public abstract partial class Commander
                         })
                         .Where(tile =>
                             tile.LooksFreeTo(target) && ((bannerHolder != null &&
-                                                          bannerHolder.DistanceTo(tile) <= GetBannerRadius(caster)) ||
+                                                          bannerHolder.DistanceTo(tile) <=
+                                                          GetBannerRadius(caster)) ||
                                                          (bannerTile != null && tile.DistanceTo(bannerTile) <=
                                                              GetBannerRadius(caster))))
                         .ToList();
@@ -427,7 +423,8 @@ public abstract partial class Commander
                     floodFill.ForEach(tile =>
                     {
                         if (moveAction == null || !(bool)moveAction.Target.CanBeginToUse(target)) return;
-                        tileOptions.Add(moveAction.CreateUseOptionOn(tile).WithIllustration(moveAction.Illustration));
+                        tileOptions.Add(
+                            moveAction.CreateUseOptionOn(tile).WithIllustration(moveAction.Illustration));
                     });
                     Option move = (await target.Battle.SendRequest(
                         new AdvancedRequest(target,
@@ -487,7 +484,6 @@ public abstract partial class Commander
                     {
                         continue;
                     }
-
                     for (int i = 0; i < 3; i++)
                     {
                         List<Option> tileOptions =
@@ -697,7 +693,6 @@ public abstract partial class Commander
                     caster.AddQEffect(DrilledReactionsExpended(caster));
                     usedDrill = true;
                 }
-
                 target.AddQEffect(RespondedToTactic(caster));
                 if (!useDrilledReactions && !target.HasEffect(MQEffectIds.AnimalReaction))
                 {
@@ -758,13 +753,10 @@ public abstract partial class Commander
                 {
                     bool useDrilledReactions =
                         caster.QEffects.All(qEffect => qEffect.Name != "Drilled Reactions Expended");
-                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable || (
-                            (useDrilledReactions || drilledTarget != target) && !target.Actions.CanTakeReaction() &&
-                            !target.HasEffect(MQEffectIds.AnimalReaction)))
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable || !CanTakeReaction(useDrilledReactions, target, drilledTarget, caster))
                     {
                         continue;
                     }
-
                     bool usedDrill = false;
                     bool lostReaction = false;
                     bool animalReact = false;
@@ -851,8 +843,7 @@ public abstract partial class Commander
             .WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnEachTarget(async delegate(CombatAction spell, Creature caster, Creature target, CheckResult _)
             {
-                bool useDrilledReactions =
-                    caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                bool useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 bool usedDrill = false;
                 bool lostReaction = false;
                 bool animalReact = false;
@@ -862,7 +853,6 @@ public abstract partial class Commander
                     caster.AddQEffect(DrilledReactionsExpended(caster));
                     usedDrill = true;
                 }
-
                 if (!useDrilledReactions && !target.HasEffect(MQEffectIds.AnimalReaction))
                 {
                     target.Actions.UseUpReaction();
@@ -974,9 +964,7 @@ public abstract partial class Commander
                                 : Usability.NotUsableOnThisCreature(
                                     "Can only reposition enemies with coordinating maneuvers."));
                     List<Option> options = [new CancelOption(true)];
-                    if (reposition.CanBeginToUse(target) && (target.Actions.CanTakeReaction() ||
-                                                             target.HasEffect(MQEffectIds.AnimalReaction) ||
-                                                             useDrilledReactions))
+                    if (reposition.CanBeginToUse(target) && CanTakeReaction(useDrilledReactions, target, caster))
                     {
                         GameLoop.AddDirectUsageOnCreatureOptions(reposition, options);
                         Option repositionWho = (await target.Battle.SendRequest(new AdvancedRequest(target,
@@ -1281,7 +1269,8 @@ public abstract partial class Commander
                              !cr.HasEffect(QEffectId.RangersCompanion)))
                 {
                     bool useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
-                    if (new ReactionRequirement().Satisfied(caster, target) != Usability.Usable) continue;
+                    if (!CanTakeReaction(useDrilledReactions, target, drilledTarget, caster)) continue;
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
                     Item? tobeReloaded =
                         target.HeldItems.FirstOrDefault(item => item.EphemeralItemProperties.NeedsReload);
                     if (tobeReloaded == null) continue;
@@ -1295,13 +1284,11 @@ public abstract partial class Commander
                     {
                         caster.AddQEffect(DrilledReactionsExpended(caster));
                     }
-
                     if ((!useDrilledReactions || drilledTarget?.Name != target.Name) &&
                         !target.HasEffect(MQEffectIds.AnimalReaction))
                     {
                         target.Actions.UseUpReaction();
                     }
-
                     await target.Battle.GameLoop.FullCast(reload);
                     target.AddQEffect(RespondedToTactic(caster));
                 }
@@ -1327,9 +1314,9 @@ public abstract partial class Commander
                 foreach (Creature target in targets.ChosenCreatures)
                 {
                     if (target.HasEffect(QEffectId.RangersCompanion)) continue;
-                    bool useDrilledReactions =
-                        caster.QEffects.All(qEffect => qEffect.Name != "Drilled Reactions Expended");
-                    if (new ReactionRequirement().Satisfied(caster, target) != Usability.Usable) continue;
+                    bool useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                    if (!CanTakeReaction(useDrilledReactions, target, drilledTarget, caster)) continue;
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
                     CombatAction? raiseAShield = Possibilities.Create(target).Filter(ap =>
                     {
                         if (ap.CombatAction.ActionId != ActionId.RaiseShield ||
@@ -1436,8 +1423,8 @@ public abstract partial class Commander
                 int moved = 0;
                 foreach (Creature target in targets.ChosenCreatures)
                 {
-                    bool useDrilledReactions =
-                        caster.QEffects.All(qEffect => qEffect.Name != "Drilled Reactions Expended");
+                    bool useDrilledReactions = caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                    if (!CanTakeReaction(useDrilledReactions, target, drilledTarget, caster)) continue;
                     bool usedDrill = false;
                     bool lostReaction = false;
                     bool animalReact = false;
@@ -1596,7 +1583,7 @@ public abstract partial class Commander
                     moved = true;
                     target.AddQEffect(RespondedToTactic(caster));
                     if (!target.IsAdjacentTo(enemy)) continue;
-                    if (new ReactionRequirement().Satisfied(caster, target) != Usability.Usable) continue;
+                    if (!CanTakeReaction(useDrilledReactions, target, drilledTarget, caster)) continue;
                     bool confirm = await target.AskForConfirmation(target.Illustration,
                         "Do you wish to strike " + enemy.Name +
                         (useDrilledReactions && drilledTarget == target ? "?" : " using a reaction?"), "Yes");
@@ -1749,6 +1736,7 @@ public abstract partial class Commander
                 {
                     bool useDrilledReactions =
                         caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                    if (!CanTakeReaction(useDrilledReactions, target, drilledTarget, caster)) continue;
                     bool usedDrill = false;
                     bool lostReaction = false;
                     bool animalReact = false;
@@ -1855,6 +1843,7 @@ public abstract partial class Commander
                 {
                     bool useDrilledReactions =
                         caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+                    if (!CanTakeReaction(useDrilledReactions, target, drilledTarget, caster)) continue;
                     bool usedDrill = false;
                     bool lostReaction = false;
                     bool animalReact = false;
@@ -1936,6 +1925,11 @@ public abstract partial class Commander
                 bool useDrilledReactions =
                     caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
                 Creature tripper = targets.ChosenCreatures[0];
+                if (!CanTakeReaction(useDrilledReactions, tripper, drilledTarget, caster))
+                {
+                    spell.RevertRequested = true;
+                    return;
+                }
                 Creature mage = targets.ChosenCreatures[1];
                 bool usedDrill = false;
                 bool lostReaction = false;
@@ -1967,7 +1961,6 @@ public abstract partial class Commander
                     tripper.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                     animalReact = true;
                 }
-
                 CheckResult result = await tripper.Battle.GameLoop.FullCast(trip)
                     ? trip.CheckResult
                     : CheckResult.Failure;
@@ -1983,9 +1976,8 @@ public abstract partial class Commander
                         tripper.AddQEffect(AnimalReaction(caster));
                     return;
                 }
-
                 tripper.AddQEffect(RespondedToTactic(caster));
-                if (result <= CheckResult.Failure) return;
+                if (result <= CheckResult.Failure || !CanTakeReaction(useDrilledReactions, mage, drilledTarget, caster)) return;
                 Possibilities spells = CreateSpells(mage);
                 bool usedDrilled2 = false;
                 bool usedReaction2 = false;
