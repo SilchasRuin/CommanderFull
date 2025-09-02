@@ -153,7 +153,7 @@ public abstract partial class Commander
                     values.Sheet.MaximumLevel >= 15 ? 5 :
                     values.Sheet.MaximumLevel >= 7 ? 4 : 3;
                 values.Tags.Add("PreparedTactics", prepTactics);
-                values.AddSelectionOption(new SingleFeatSelectionOption("DefaultTarget", "Drilled Reactions Default Target", SelectionOption.PRECOMBAT_PREPARATIONS_LEVEL, feat => feat.Tag is "DefaultTarget").WithIsOptional());
+                values.AddSelectionOption(new MultipleFeatSelectionOption("DefaultTarget", "Drilled Reactions Default Target", SelectionOption.PRECOMBAT_PREPARATIONS_LEVEL, feat => feat.Tag is "DefaultTarget", 1).WithIsOptional());
                 values.AddSelectionOption(new MultipleFeatSelectionOption("CommanderTactics", "Prepared Tactics",
                     SelectionOption.PRECOMBAT_PREPARATIONS_LEVEL, feat => feat.HasTrait(MTraits.Tactic), prepTactics
                     ));
@@ -210,7 +210,7 @@ public abstract partial class Commander
             })
             .WithOnCreature(cr =>
             {
-                cr.AddQEffect(new QEffect()
+                cr.AddQEffect(new QEffect("Drilled Reactions", "Once per round when you use a tactic, you can grant one ally of your choice benefiting from that tactic an extra reaction. This reaction has to be used for that tactic and is lost if not used.")
                 {
                     ProvideMainAction = _ =>
                     {
@@ -219,7 +219,7 @@ public abstract partial class Commander
                             SubmenuId = MSubmenuIds.Commander
                         };
                         return commanderMenu;
-                    }
+                    }, Innate = true
                 });
                 cr.AddQEffect(new QEffect()
                 {
@@ -233,7 +233,7 @@ public abstract partial class Commander
                     },
                     StartOfCombat = _ =>
                     {
-                        cr.AddQEffect(new QEffect("Audible Tactics", "Your tactics gain the Auditory trait.") { Id = MQEffectIds.AudibleTactics });
+                        cr.AddQEffect(new QEffect("Audible Tactics", "Your tactics gain the Auditory trait.") { Id = MQEffectIds.AudibleTactics, DoNotShowUpOverhead = true});
                         return Task.CompletedTask;
                     }
                 });
@@ -367,86 +367,10 @@ public abstract partial class Commander
             })
             .WithPermanentQEffect(null, qf =>
             {
-                qf.StartOfCombat = async effectQ =>
+                bool applied = false;
+                qf.StartOfCombat = scQf =>
                 {
-                    effectQ.StateCheckLayer = 1;
-                    Creature self = qf.Owner;
-                    self.AddQEffect(new QEffect
-                    {
-                        Id = MQEffectIds.Squadmate,
-                        Source = self
-                    });
-                    List<Creature> potentialSquadmates = self.Battle.AllCreatures.Where(cr =>
-                        cr.FriendOf(self) && cr.PersistentCharacterSheet != null && cr != self).ToList();
-                    if (potentialSquadmates.Count <= self.Abilities.Intelligence + 2)
-                    {
-                        foreach (Creature creature in potentialSquadmates)
-                            creature.AddQEffect(new QEffect
-                            {
-                                Id = MQEffectIds.Squadmate,
-                                Source = self
-                            });
-                        if (self.HasFeat(MFeatNames.CommandersCompanion) &&
-                            !self.PersistentUsedUpResources.AnimalCompanionIsDead)
-                        {
-                            self.AddQEffect(new QEffect()
-                            {
-                                StateCheckWithVisibleChanges = effect =>
-                                {
-                                    if (self.Battle.AllCreatures.Find(cr => IsMyAnimalCompanion(self, cr)) is
-                                        not { } companion) return Task.CompletedTask;
-                                    companion.AddQEffect(new QEffect()
-                                    {
-                                        Id = MQEffectIds.Squadmate,
-                                        Source = self
-                                    });
-                                    effect.ExpiresAt = ExpirationCondition.Immediately;
-
-                                    return Task.CompletedTask;
-                                }
-                            });
-                        }
-                    }
-                    else
-                    {
-                        CombatAction chooseSquadmate = CombatAction.CreateSimple(self, "Choose Squadmate",
-                                Trait.DoesNotBreakStealth, Trait.DoNotShowInCombatLog,
-                                Trait.DoNotShowOverheadOfActionName)
-                            .WithActionCost(0).WithEffectOnEachTarget((_, _, target, _) =>
-                            {
-                                target.AddQEffect(new QEffect()
-                                {
-                                    Id = MQEffectIds.Squadmate,
-                                    Source = self
-                                });
-                                return Task.CompletedTask;
-                            });
-                        chooseSquadmate.Target = SquadmateTarget(self);
-                        await self.Battle.GameLoop.FullCast(chooseSquadmate);
-                        if (self.HasFeat(MFeatNames.CommandersCompanion) &&
-                            !self.PersistentUsedUpResources.AnimalCompanionIsDead)
-                        {
-                            self.AddQEffect(new QEffect()
-                            {
-                                StateCheckWithVisibleChanges = effect =>
-                                {
-                                    if (self.Battle.AllCreatures.Find(cr => IsMyAnimalCompanion(self, cr)) is
-                                        { } companion)
-                                    {
-                                        companion.AddQEffect(new QEffect()
-                                        {
-                                            Id = MQEffectIds.Squadmate,
-                                            Source = self
-                                        });
-                                        effect.ExpiresAt = ExpirationCondition.Immediately;
-                                    }
-
-                                    return Task.CompletedTask;
-                                }
-                            });
-                        }
-                    }
-
+                    Creature self = scQf.Owner;
                     if (self.HeldItems.Any(item => item.HasTrait(MTraits.Banner)) || self.CarriedItems.Any(item => item.HasTrait(MTraits.Banner) && !item.HasTrait(Trait.Barding) && !item.HasTrait(Trait.Worn)))
                     {
                         self.AddQEffect(new QEffect
@@ -601,6 +525,42 @@ public abstract partial class Commander
                             }
                         });
                     }
+                    applied = false;
+                    return Task.CompletedTask;
+                };
+                qf.StartOfYourPrimaryTurn = async (_, self)=>
+                {
+                    if (applied) return;
+                    self.AddQEffect(SquadmateQf(self));
+                    if (self.HasFeat(MFeatNames.CommandersCompanion) &&
+                        !self.PersistentUsedUpResources.AnimalCompanionIsDead)
+                    {
+                        if (self.Battle.AllCreatures.Find(cr => IsMyAnimalCompanion(self, cr)) is
+                            { } companion)
+                        {
+                            companion.AddQEffect(SquadmateQf(companion));
+                        }
+                    }
+                    List<Creature> potentialSquadmates = self.Battle.AllCreatures.Where(cr =>
+                        cr.FriendOf(self) && (cr.PersistentCharacterSheet != null || cr.HasEffect(QEffectId.RangersCompanion) || cr.Traits.Any(t => t.HumanizeTitleCase2() == "Eidolon")) && !cr.QEffects.Any(effect => effect.Id == MQEffectIds.Squadmate && effect.Source == self)).ToList();
+                    if (potentialSquadmates.Count <= self.Abilities.Intelligence + 2)
+                    {
+                        foreach (Creature creature in potentialSquadmates)
+                            creature.AddQEffect(SquadmateQf(self));
+                    }
+                    else
+                    {
+                        CombatAction chooseSquadmate = CombatAction.CreateSimple(self, "Choose Squadmate",
+                                Trait.DoesNotBreakStealth, Trait.DoNotShowInCombatLog,
+                                Trait.DoNotShowOverheadOfActionName)
+                            .WithActionCost(0).WithEffectOnEachTarget((_, _, target, _) =>
+                            {
+                                target.AddQEffect(SquadmateQf(self));
+                                return Task.CompletedTask;
+                            });
+                        chooseSquadmate.Target = SquadmateTarget(self);
+                        await self.Battle.GameLoop.FullCast(chooseSquadmate);
+                    }
                 };
             });
         string fulltext = (commander as ClassSelectionFeat)!.RulesText;
@@ -661,7 +621,7 @@ public abstract partial class Commander
                                 "You are the default target for drilled reactions.",
                                 ExpirationCondition.Never,
                                 qfFeat.Owner, MIllustrations.Toggle)
-                            { Id = MQEffectIds.DrilledTarget };
+                            { Id = MQEffectIds.DrilledTarget, DoNotShowUpOverhead = true};
                         chosenCreature.AddQEffect(defaultTarget);
                         return Task.CompletedTask;
                     };
@@ -723,13 +683,20 @@ public abstract partial class Commander
                                             "You are the default target for drilled reactions.",
                                             ExpirationCondition.Never,
                                             self, MIllustrations.Toggle)
-                                        { Id = MQEffectIds.DrilledTarget })));
+                                    {
+                                        Id = MQEffectIds.DrilledTarget,
+                                        DoNotShowUpOverhead = true
+                                    })));
                         }, noConfirmation: true));
                 }
-
-                var hey = await self.Battle.SendRequest(new AdvancedRequest(self,
+                RequestResult defaultChoice = await self.Battle.SendRequest(new AdvancedRequest(self,
                     "Choose an ally to be the default target for drilled reactions.", options));
-                await hey.ChosenOption.Action();
+                await defaultChoice.ChosenOption.Action();
+                if (!self.HasFeat(MFeatNames.DrilledReflexes)) return;
+                options.Remove(defaultChoice.ChosenOption);
+                RequestResult secondDefault = await self.Battle.SendRequest(new AdvancedRequest(self,
+                    "Choose another ally to be a default target for drilled reactions.", options));
+                await secondDefault.ChosenOption.Action();
             });
         return choiceAction;
     }
@@ -758,10 +725,23 @@ public abstract partial class Commander
             });
     }
 
-    private static Creature? DrilledTarget(ChosenTargets targets, Creature commander)
+    private static List<Creature?> DrilledTargets(ChosenTargets targets, Creature commander)
     {
-        return targets.ChosenCreatures.Find(cr => cr.QEffects.Any(qf => qf.Id == MQEffectIds.DrilledTarget && qf.Source == commander) && !cr.HasEffect(MQEffectIds.AnimalReaction)) ??
-               targets.ChosenCreatures.FirstOrDefault(cr => !cr.HasEffect(MQEffectIds.AnimalReaction));
+        List<Creature?> drilledTargets =
+        [
+            targets.ChosenCreatures.FirstOrDefault(cr =>
+                cr.QEffects.Any(qf => qf.Id == MQEffectIds.DrilledTarget && qf.Source == commander) &&
+                !cr.HasEffect(MQEffectIds.AnimalReaction)) ??
+            targets.ChosenCreatures.FirstOrDefault(cr => !cr.HasEffect(MQEffectIds.AnimalReaction))
+
+        ];
+        if (commander.HasFeat(MFeatNames.DrilledReflexes))
+        {
+            drilledTargets.Add(targets.ChosenCreatures.Find(cr => cr.QEffects.Any(qf => qf.Id == MQEffectIds.DrilledTarget && qf.Source == commander) && !cr.HasEffect(MQEffectIds.AnimalReaction) && !drilledTargets.Contains(cr)) ??
+                                targets.ChosenCreatures.FirstOrDefault(cr => !cr.HasEffect(MQEffectIds.AnimalReaction) && !drilledTargets.Contains(cr)));
+        }
+        if (drilledTargets.Count == 0) drilledTargets.Add(targets.ChosenCreatures[0]);
+        return drilledTargets;
     }
      private static Possibilities CreateSpells(Creature target)
      {
@@ -945,9 +925,8 @@ public abstract partial class Commander
         return new CombatAction(owner, action.Illustration, action.Name, action.Traits.ToArray(), action.Description,
             Target.Self()).WithActionCost(0).WithSoundEffect(SfxName.RaiseShield).WithEffectOnSelf(creature =>
         {
-            // add try parses and feat checks
             var amount = 1;
-            if (action.Name == "Parry Fist" &&
+            if (action.Name == "Parry (fist)" &&
                 ModManager.TryParse("Archetype.SpiritWarrior.FlowingPalm", out FeatName flowingPalm) &&
                 owner.HasFeat(flowingPalm))
                 amount = 2;
@@ -964,6 +943,16 @@ public abstract partial class Commander
     #endregion
 
     #region QEffects
+
+    internal static QEffect SquadmateQf(Creature self)
+    {
+        return new QEffect
+        {
+            Id = MQEffectIds.Squadmate,
+            Source = self,
+            DoNotShowUpOverhead = true
+        };
+    }
 
     private static QEffect DrilledReactionsExpended(Creature caster)
     {
@@ -1108,10 +1097,16 @@ public abstract partial class Commander
     public static Target SquadmateTarget(Creature owner)
     {
         return (Target.MultipleCreatureTargets(2 + owner.Abilities.Intelligence, () => Target.RangedFriend(100)
-                .WithAdditionalConditionOnTargetCreature((self, other) =>
-                    other.PersistentCharacterSheet != null && other != self
+                .WithAdditionalConditionOnTargetCreature((self, cr) =>
+                {
+                    if (cr.QEffects.Any(effect =>
+                            effect.Id == MQEffectIds.Squadmate && effect.Source == self))
+                        return Usability.NotUsableOnThisCreature("This creature is already a squadmate.");
+                    return cr.PersistentCharacterSheet != null || cr.HasEffect(QEffectId.RangersCompanion) ||
+                           cr.Traits.Any(t => t.HumanizeTitleCase2() == "Eidolon")
                         ? Usability.Usable
-                        : Usability.NotUsableOnThisCreature("Must be a party member."))) as
+                        : Usability.NotUsableOnThisCreature("Must be a party member, animal companion, or eidolon.");
+                })) as
             MultipleCreatureTargetsTarget)!
             .WithMinimumTargets(
                 1).WithMustBeDistinct();
@@ -1226,10 +1221,10 @@ public abstract partial class Commander
         return false;
     }
 
-    internal static bool CanTakeReaction(bool useDrilledReactions, Creature target, Creature? drilledTarget, Creature caster)
+    internal static bool CanTakeReaction(bool useDrilledReactions, Creature target, List<Creature?> drilledTargets, Creature caster)
     {
         if (target.HasEffect(QEffectId.CannotTakeReactions)) return false;
-        return (useDrilledReactions && drilledTarget == target) ||
+        return (useDrilledReactions && IsDrilledTarget(drilledTargets, target)) ||
                target.Actions.CanTakeReaction() || AnimalReactionAvailable(caster, target);
     }
     internal static bool CanTakeReaction(bool useDrilledReactions, Creature target, Creature caster)
@@ -1237,6 +1232,22 @@ public abstract partial class Commander
         if (target.HasEffect(QEffectId.CannotTakeReactions)) return false;
         return useDrilledReactions ||
                target.Actions.CanTakeReaction() || AnimalReactionAvailable(caster, target);
+    }
+
+    internal static bool IsDrilledTarget(List<Creature?> drilledTargets, Creature target)
+    {
+        return drilledTargets.Count > 0 && drilledTargets.Any(cr => cr == target);
+    }
+
+    internal static bool UseDrilledReactions(Creature caster)
+    {
+        return caster.HasFeat(MFeatNames.DrilledReflexes) ? caster.QEffects.Count(qEffect => qEffect.Id == MQEffectIds.ExpendedDrilled) < 2 : caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+    }
+
+    internal static void RemoveDrilledExpended(Creature caster)
+    {
+        QEffect? expended = caster.QEffects.FirstOrDefault(qf => qf.Id == MQEffectIds.ExpendedDrilled);
+        if (expended != null) expended.ExpiresAt = ExpirationCondition.Immediately;
     }
     #endregion
 
@@ -1279,11 +1290,11 @@ public abstract partial class Commander
         public override Usability Satisfied(Creature source, Creature target)
         {
             if (target.PrimaryWeaponIncludingRanged == null || !target.CreateStrike(target.PrimaryWeaponIncludingRanged)
-                    .WithActionCost(0).CanBeginToUse(target))
+                    .WithActionCost(0).CanBeginToUse(target) || target.PrimaryWeaponIncludingRanged.EphemeralItemProperties.NeedsReload
+                || target.PrimaryWeaponIncludingRanged.EphemeralItemProperties.AmmunitionLeftInMagazine <= 0)
             {
                 return Usability.NotUsableOnThisCreature(target.Name + " cannot make a strike.");
             }
-
             return Usability.Usable;
         }
     }

@@ -12,6 +12,7 @@ using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
+using Dawnsbury.Display;
 using Dawnsbury.Modding;
 using Microsoft.Xna.Framework;
 using static CommanderFull.Commander;
@@ -102,85 +103,10 @@ public class CommanderArchetype
             .WithPermanentQEffect(null, qf =>
             {
                 qf.Id = MQEffectIds.ExpendedDrilled;
-                qf.StartOfCombat = async effectQ =>
+                bool applied = false;
+                qf.StartOfCombat = scQf =>
                 {
-                    effectQ.StateCheckLayer = 1;
-                    Creature self = qf.Owner;
-                    self.AddQEffect(new QEffect
-                    {
-                        Id = MQEffectIds.Squadmate,
-                        Source = self
-                    });
-                    List<Creature> potentialSquadmates = self.Battle.AllCreatures.Where(cr =>
-                        cr.FriendOf(self) && cr.PersistentCharacterSheet != null && cr != self).ToList();
-                    if (potentialSquadmates.Count <= self.Abilities.Intelligence + 2)
-                    {
-                        foreach (Creature creature in potentialSquadmates)
-                            creature.AddQEffect(new QEffect
-                            {
-                                Id = MQEffectIds.Squadmate,
-                                Source = self
-                            });
-                        if (self.HasFeat(MFeatNames.CommandersCompanion) &&
-                            !self.PersistentUsedUpResources.AnimalCompanionIsDead)
-                        {
-                            self.AddQEffect(new QEffect()
-                            {
-                                StateCheckWithVisibleChanges = effect =>
-                                {
-                                    if (self.Battle.AllCreatures.Find(cr => IsMyAnimalCompanion(self, cr)) is
-                                        not { } companion) return Task.CompletedTask;
-                                    companion.AddQEffect(new QEffect()
-                                    {
-                                        Id = MQEffectIds.Squadmate,
-                                        Source = self
-                                    });
-                                    effect.ExpiresAt = ExpirationCondition.Immediately;
-
-                                    return Task.CompletedTask;
-                                }
-                            });
-                        }
-                    }
-                    else
-                    {
-                        CombatAction chooseSquadmate = CombatAction.CreateSimple(self, "Choose Squadmate",
-                                Trait.DoesNotBreakStealth, Trait.DoNotShowInCombatLog,
-                                Trait.DoNotShowOverheadOfActionName)
-                            .WithActionCost(0).WithEffectOnEachTarget((_, _, target, _) =>
-                            {
-                                target.AddQEffect(new QEffect()
-                                {
-                                    Id = MQEffectIds.Squadmate,
-                                    Source = self
-                                });
-                                return Task.CompletedTask;
-                            });
-                        chooseSquadmate.Target = SquadmateTarget(self);
-                        await self.Battle.GameLoop.FullCast(chooseSquadmate);
-                        if (self.HasFeat(MFeatNames.CommandersCompanion) &&
-                            !self.PersistentUsedUpResources.AnimalCompanionIsDead)
-                        {
-                            self.AddQEffect(new QEffect()
-                            {
-                                StateCheckWithVisibleChanges = effect =>
-                                {
-                                    if (self.Battle.AllCreatures.Find(cr => IsMyAnimalCompanion(self, cr)) is
-                                        { } companion)
-                                    {
-                                        companion.AddQEffect(new QEffect()
-                                        {
-                                            Id = MQEffectIds.Squadmate,
-                                            Source = self
-                                        });
-                                        effect.ExpiresAt = ExpirationCondition.Immediately;
-                                    }
-
-                                    return Task.CompletedTask;
-                                }
-                            });
-                        }
-                    }
+                    Creature self = scQf.Owner;
                     if (self.HeldItems.Any(item => item.HasTrait(MTraits.Banner)) || self.CarriedItems.Any(item => item.HasTrait(MTraits.Banner) && !item.HasTrait(Trait.Barding) && !item.HasTrait(Trait.Worn)))
                     {
                         self.AddQEffect(new QEffect
@@ -271,6 +197,7 @@ public class CommanderArchetype
                                         }
                                         Item basicBanner = Items.CreateNew(ItemName.Club);
                                         basicBanner.Traits.Add(MTraits.Banner);
+                                        basicBanner.Traits.Add(Trait.EncounterEphemeral);
                                         basicBanner.Name = "Simple Banner";
                                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                                         qEffect.Owner.Space.CenterTile.DropItem(basicBanner);
@@ -306,6 +233,7 @@ public class CommanderArchetype
                     {
                         Item basicBanner = Items.CreateNew(ItemName.Club);
                         basicBanner.Traits.Add(MTraits.Banner);
+                        basicBanner.Traits.Add(Trait.EncounterEphemeral);
                         basicBanner.Name = "Simple Banner";
                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                         if (!self.CarriedItems.Any(item =>
@@ -332,6 +260,42 @@ public class CommanderArchetype
                                 self.AddQEffect(commandersBannerEffect);
                             }
                         });
+                    }
+                    applied = false;
+                    return Task.CompletedTask;
+                };
+                qf.StartOfYourPrimaryTurn = async (_, self)=>
+                {
+                    if (applied) return;
+                    self.AddQEffect(SquadmateQf(self));
+                    if (self.HasFeat(MFeatNames.CommandersCompanion) &&
+                        !self.PersistentUsedUpResources.AnimalCompanionIsDead)
+                    {
+                        if (self.Battle.AllCreatures.Find(cr => IsMyAnimalCompanion(self, cr)) is
+                            { } companion)
+                        {
+                            companion.AddQEffect(SquadmateQf(companion));
+                        }
+                    }
+                    List<Creature> potentialSquadmates = self.Battle.AllCreatures.Where(cr =>
+                        cr.FriendOf(self) && (cr.PersistentCharacterSheet != null || cr.HasEffect(QEffectId.RangersCompanion) || cr.Traits.Any(t => t.HumanizeTitleCase2() == "Eidolon")) && !cr.QEffects.Any(effect => effect.Id == MQEffectIds.Squadmate && effect.Source == self)).ToList();
+                    if (potentialSquadmates.Count <= self.Abilities.Intelligence + 2)
+                    {
+                        foreach (Creature creature in potentialSquadmates)
+                            creature.AddQEffect(SquadmateQf(self));
+                    }
+                    else
+                    {
+                        CombatAction chooseSquadmate = CombatAction.CreateSimple(self, "Choose Squadmate",
+                                Trait.DoesNotBreakStealth, Trait.DoNotShowInCombatLog,
+                                Trait.DoNotShowOverheadOfActionName)
+                            .WithActionCost(0).WithEffectOnEachTarget((_, _, target, _) =>
+                            {
+                                target.AddQEffect(SquadmateQf(self));
+                                return Task.CompletedTask;
+                            });
+                        chooseSquadmate.Target = SquadmateTarget(self);
+                        await self.Battle.GameLoop.FullCast(chooseSquadmate);
                     }
                 };
             })

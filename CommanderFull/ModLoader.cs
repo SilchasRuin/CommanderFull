@@ -1,9 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Core;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb;
-using Dawnsbury.Core.CharacterBuilder.FeatsDb.TrueFeatDb;
 using Dawnsbury.Core.CombatActions;
 using Dawnsbury.Core.Coroutines.Requests;
 using Dawnsbury.Core.Creatures;
@@ -11,7 +11,6 @@ using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Core;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Targeting;
-using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Display.Controls.Statblocks;
 using Dawnsbury.Display.Illustrations;
@@ -30,7 +29,7 @@ public class ModLoader
     public static void LoadMod()
     {
         Harmony harmony = new("commanderMod");
-        harmony.PatchAll();
+        harmony.PatchAll(Assembly.GetExecutingAssembly());
         BannerItem.LoadItems();
         BannerItem.LoadBannerEffects();
         foreach (Feat feat in Commander.LoadAll())
@@ -265,7 +264,7 @@ public class ModLoader
             Feat? battlePlanner = AllFeats.GetFeatByFeatNameOrStringOptional(ExplorationActivities.ModData.FeatNames.BattlePlanner, "BattlePlanner") ??
                                   AllFeats.All.FirstOrDefault(feat => feat.FeatName == ExplorationActivities.ModData.FeatNames.BattlePlanner || feat.Name == "Battle Planner");
             if (battlePlanner != null)
-                battlePlanner.RulesText = battlePlanner.RulesText.Insert(battlePlanner.RulesText.LastIndexOf(battlePlanner.RulesText.Last()) ,$"\n\n{{b}}Special{{/b}} If you are a Commander with the level 3 {Commander.UseCreatedTooltip("warfare expertise")} class feature, you instead gain this effect: If you or one of your allies has taken the scout exploration activity, you reroll your initiative and take the higher value.");
+                battlePlanner.RulesText = battlePlanner.RulesText.Insert(battlePlanner.RulesText.LastIndexOf(battlePlanner.RulesText.Last()) ,$"\n\n{{b}}Special{{/b}} If you are a Commander with the level 3 {Commander.UseCreatedTooltip("warfare expertise")} class feature, you instead gain this effect: If you or one of your allies has taken the scout exploration activity, you reroll your initiative and take the higher value");
         };
 }
     public static AdvancedRequest NewSleepRequest(int sleepTime)

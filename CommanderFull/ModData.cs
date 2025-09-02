@@ -69,6 +69,7 @@ public abstract class ModData
         public static readonly FeatName ReactiveStrike = ModManager.RegisterFeatName("FC_ReactiveStrike", "Reactive Strike");
         public static readonly FeatName TacticalExcellence4 = ModManager.RegisterFeatName("TacticalExcellence4", "Tactical Excellence - 4");
         public static readonly FeatName TacticalExcellence8 = ModManager.RegisterFeatName("TacticalExcellence8", "Tactical Excellence - 8");
+        public static readonly FeatName DrilledReflexes = ModManager.RegisterFeatName("FC_DrilledReflexes", "Drilled Reflexes");
         #endregion
         #region tactics
         public static readonly FeatName GatherToMe = ModManager.RegisterFeatName("FC_GatherToMe", "Gather to Me!");
@@ -144,7 +145,7 @@ public abstract class ModData
     public abstract class MRuneKinds
     {
         public static readonly RuneKind Banner = ModManager.RegisterEnumMember<RuneKind>("Banner");
-        public static readonly RuneKind MagicalBanner = ModManager.RegisterEnumMember<RuneKind>("MagicalBanner");
+        public static readonly RuneKind MagicalBanner = ModManager.RegisterEnumMember<RuneKind>("Magical Banner");
     }
     public abstract class MActionIds
     {

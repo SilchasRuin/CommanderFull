@@ -5,7 +5,7 @@ using Dawnsbury.Core.Creatures;
 using HarmonyLib;
 
 namespace CommanderFull;
-[HarmonyPatch(typeof(Creature), nameof(Creature.RecalculateLandSpeedAndInitiative))]
+[HarmonyLib.HarmonyPatch(typeof(Creature), nameof(Creature.RecalculateLandSpeedAndInitiative))]
 internal static class ArmorRegiment
 {
     internal static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
