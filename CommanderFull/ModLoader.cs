@@ -11,6 +11,7 @@ using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Core;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Targeting;
+using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Display.Controls.Statblocks;
 using Dawnsbury.Display.Illustrations;
@@ -31,6 +32,7 @@ public class ModLoader
         Harmony harmony = new("commanderMod");
         harmony.PatchAll(Assembly.GetExecutingAssembly());
         BannerItem.LoadItems();
+        foreach (ItemName dummy in BannerItem.LoadBanners()) { }
         BannerItem.LoadBannerEffects();
         foreach (Feat feat in Commander.LoadAll())
         {

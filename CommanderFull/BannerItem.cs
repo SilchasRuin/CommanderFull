@@ -17,12 +17,16 @@ public abstract class BannerItem
 {
     public static void LoadItems()
     {
-        ItemName dummy = Banner;
-        ItemName dummy1 = Harness;
-        ItemName dummy2 = BlazingBanner;
-        ItemName dummy3 = VandalsBanner;
-        ItemName dummy4 = KnavesStandard;
+        ItemName dummy2 = Harness;
     }
+    public static IEnumerable<ItemName> LoadBanners()
+    {
+        yield return Banner;
+        yield return BlazingBanner;
+        yield return VandalsBanner;
+        yield return KnavesStandard;
+    }
+    
     public static readonly ItemName Banner = ModManager.RegisterNewItemIntoTheShop("Banner", itemName =>
     {
         return new Item(itemName, MIllustrations.Banner, "commander's banner", 1, 0, Trait.DoNotAddToShop, MTraits.Commander, Trait.Runestone)
