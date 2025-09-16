@@ -313,9 +313,8 @@ public class CommanderArchetype
                     feat => feat.HasTrait(MTraits.BasicTacticPre), 2));
                 values.Tags.Remove("PreparedTactics");
                 values.Tags.Add("PreparedTactics", 2);
-                var myOption = values.SelectionOptions
-                    .FirstOrDefault(option => option.Name == "Prepared Tactics") as MultipleFeatSelectionOption;
-                if (myOption == null) return;
+                if (values.SelectionOptions
+                        .FirstOrDefault(option => option.Name == "Prepared Tactics") is not MultipleFeatSelectionOption myOption) return;
                 FieldInfo? maxOptions  = typeof(MultipleFeatSelectionOption)
                     .GetField("<MaximumNumberOfOptions>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
                 if (maxOptions == null) return;
@@ -331,9 +330,8 @@ public class CommanderArchetype
                     feat => feat.HasTrait(MTraits.BasicTacticPre) || feat.HasTrait(MTraits.ExpertTacticPre), 2));
                 values.Tags.Remove("PreparedTactics");
                 values.Tags.Add("PreparedTactics", 3);
-                var myOption = values.SelectionOptions
-                    .FirstOrDefault(option => option.Name == "Prepared Tactics") as MultipleFeatSelectionOption;
-                if (myOption == null) return;
+                if (values.SelectionOptions
+                        .FirstOrDefault(option => option.Name == "Prepared Tactics") is not MultipleFeatSelectionOption myOption) return;
                 FieldInfo? maxOptions = typeof(MultipleFeatSelectionOption)
                     .GetField("<MaximumNumberOfOptions>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
                 if (maxOptions == null) return;
