@@ -196,6 +196,6 @@ public abstract class ModData
 
     public abstract class MItemGroups
     {
-        public static readonly ItemGreaterGroup MagicalBanner = ModManager.RegisterEnumMember<ItemGreaterGroup>("MagicalBanner");
+        public static readonly ItemGreaterGroup MagicalBanner = ModManager.RegisterEnumMember<ItemGreaterGroup>("Magical Banner");
     }
 }

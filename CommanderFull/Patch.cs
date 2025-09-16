@@ -1,11 +1,15 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using Dawnsbury.Audio;
 using Dawnsbury.Core.Creatures;
+using Dawnsbury.Core.Mechanics.Rules;
+using Dawnsbury.Core.Mechanics.Treasure;
+using Dawnsbury.Display.Controls;
 using HarmonyLib;
 
 namespace CommanderFull;
-[HarmonyLib.HarmonyPatch(typeof(Creature), nameof(Creature.RecalculateLandSpeedAndInitiative))]
+[HarmonyPatch(typeof(Creature), nameof(Creature.RecalculateLandSpeedAndInitiative))]
 internal static class ArmorRegiment
 {
     internal static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
@@ -36,6 +40,30 @@ internal static class ArmorRegiment
         //fallback to string check
         string? opStr = operand.ToString();
         return opStr != null && opStr.Contains("unburdenedIron") && opStr.Contains("Boolean");
+    }
+}
+
+[HarmonyPatch(typeof(RunestoneRules), nameof(RunestoneRules.DetachSubItem))]
+internal static class PatchRuneCost
+{
+    internal static bool Prefix(int priceOfDetaching,
+        InventoryItemSlot itemSlot,
+        Item rune,
+        Item slotItem,
+        Action onSuccessfulDetach)
+    {
+        if (rune.RuneProperties == null || rune.RuneProperties.RuneKind != ModData.MRuneKinds.MagicalBanner) return true;
+        AltDetach.Detach(itemSlot, onSuccessfulDetach, slotItem, rune);
+        return false;
+    }
+}
+internal static class AltDetach
+{
+    internal static void Detach(InventoryItemSlot itemSlot, Action onSuccessfulDetach, Item slotItem, Item rune)
+    {
+        Sfxs.Play(SfxName.PutDown);
+        itemSlot.ReplaceSelf(RunestoneRules.RecreateWithUnattachedSubitem(slotItem, rune, slotItem.StoresItem == null));
+        onSuccessfulDetach();
     }
 }
 public static class MyConditionPatch

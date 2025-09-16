@@ -153,7 +153,7 @@ public abstract partial class Commander
                     values.Sheet.MaximumLevel >= 15 ? 5 :
                     values.Sheet.MaximumLevel >= 7 ? 4 : 3;
                 values.Tags.Add("PreparedTactics", prepTactics);
-                values.AddSelectionOption(new MultipleFeatSelectionOption("DefaultTarget", "Drilled Reactions Default Target", SelectionOption.PRECOMBAT_PREPARATIONS_LEVEL, feat => feat.Tag is "DefaultTarget", 1).WithIsOptional());
+                values.AddSelectionOption(new MultipleFeatSelectionOption("DefaultTargetMS", "Drilled Reactions Default Target", SelectionOption.PRECOMBAT_PREPARATIONS_LEVEL, feat => feat.Tag is "DefaultTarget", 1).WithIsOptional());
                 values.AddSelectionOption(new MultipleFeatSelectionOption("CommanderTactics", "Prepared Tactics",
                     SelectionOption.PRECOMBAT_PREPARATIONS_LEVEL, feat => feat.HasTrait(MTraits.Tactic), prepTactics
                     ));
@@ -665,8 +665,7 @@ public abstract partial class Commander
             .WithEffectOnChosenTargets(async (self, _) =>
             {
                 List<Creature> creatures = self.Battle.AllCreatures.Where(cr =>
-                    (cr.FriendOf(self) && cr.PersistentCharacterSheet != null) ||
-                    cr.FindQEffect(QEffectId.RangersCompanion)?.Source == self).ToList();
+                    cr.FindQEffect(MQEffectIds.Squadmate)?.Source == self).ToList();
                 List<Option> options = [];
                 foreach (Creature creature in creatures)
                 {
@@ -1277,10 +1276,9 @@ public abstract partial class Commander
         public override Usability Satisfied(Creature source, Creature target)
         {
             if (target.QEffects.Any(qEffect => qEffect.Id == MQEffectIds.TacticResponse))
-            {
-                return Usability.NotUsableOnThisCreature(target.Name +
-                                                         " has already responded to a tactic this round.");
-            }
+                return Usability.NotUsableOnThisCreature(target.Name + " has already responded to a tactic this round.");
+            if (target.Destroyed || !target.Alive)
+                return Usability.NotUsableOnThisCreature("This creature is not capable of taking action.");
             return Usability.Usable;
         }
     }

@@ -1171,31 +1171,41 @@ public abstract partial class Commander
 
     private static CombatAction EndIt(Creature owner)
     {
-        List<Creature> allies = owner.Battle.AllCreatures.Where(cr => cr.FriendOf(owner) && cr.Alive).ToList();
-        List<Creature> enemies = owner.Battle.AllCreatures.Where(cr => cr.EnemyOf(owner) && cr.Alive).ToList();
-        bool more = allies.Count > enemies.Count;
-        bool died = owner.HasEffect(MQEffectIds.DeathCounter);
+        AreaTarget endTarget = (AllSquadmateTarget(owner) as AreaTarget)!;
+        endTarget.AdditionalRequirementOnAreaCaster += caster =>
+        {
+            List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
+            if (!squadmates.Any(cr => new TacticResponseRequirement().Satisfied(owner, cr)))
+                return Usability.NotUsable("There must be at least one squadmate who can respond to a tactic.");
+            List<Creature> allies = caster.Battle.AllCreatures.Where(cr => cr.FriendOf(owner) && cr.Alive && !cr.HasTrait(Trait.Object) && !cr.HasTrait(Trait.Pseudocreature) && !cr.Destroyed && !cr.HasTrait(Trait.Illusion)).ToList();
+            List<Creature> enemies = caster.Battle.AllCreatures.Where(cr => cr.EnemyOf(owner) && cr.Alive && !cr.HasTrait(Trait.Object) && !cr.HasTrait(Trait.Pseudocreature) && !cr.Destroyed && !cr.HasTrait(Trait.Illusion)).ToList();
+            bool more = allies.Count > enemies.Count;
+            bool died = owner.HasEffect(MQEffectIds.DeathCounter);
+            return more switch
+            {
+                false when !died => Usability.NotUsable(
+                    "You do not outnumber your enemies and an enemy hasn't been reduced to 0 hp since the start of your last turn."),
+                false when died => Usability.NotUsable("You do not outnumber your enemies."),
+                _ => more && !died
+                    ? Usability.NotUsable(
+                        "An enemy hasn't been reduced to 0 hp since the start of your last turn.")
+                    : Usability.Usable
+            };
+        };
         CombatAction tactic = new CombatAction(owner, MIllustrations.EndIt, "End it!",
                 [
                     Trait.Basic, Trait.Incapacitation, MTraits.Commander, MTraits.Tactic,
                     MTraits.Brandish
                 ],
                 "If you and your allies outnumber all enemies on the battlefield, and you or a squadmate have reduced an enemy to 0 Hit Points since the start of your last turn, you may signal all squadmates within the aura of your banner; you and each ally can Step as a free action directly toward a hostile creature. Any hostile creatures within 10 feet of a squadmate after this movement must attempt a Will save against your class DC; on a failure they become fleeing for 1 round, and on a critical failure they become fleeing for 1 round and frightened 2. This is an emotion, fear, and mental effect.",
-                more && died
-                    ? AllSquadmateInBannerTarget(owner)
-                    : !more && died
-                        ? Target.Uncastable("You do not outnumber your enemies.")
-                        : !died && more
-                            ? Target.Uncastable(
-                                "An enemy hasn't been reduced to 0 hp since the start of your last turn.")
-                            : Target.Uncastable(
-                                "You do not outnumber your enemies and an enemy hasn't been reduced to 0 hp since the start of your last turn."))
+               endTarget)
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
                 var moved = false;
                 foreach (Creature target in targets.ChosenCreatures)
                 {
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
                     IEnumerable<Creature> enemies2 =
                         target.Battle.AllCreatures.Where(cr => cr.EnemyOf(target) && cr.Alive);
                     Creature? choice = await target.Battle.AskToChooseACreature(target, enemies2,
@@ -1211,6 +1221,7 @@ public abstract partial class Commander
                     spell.RevertRequested = true;
                     return;
                 }
+                List<Creature> enemies = caster.Battle.AllCreatures.Where(cr => cr.EnemyOf(owner) && cr.Alive && !cr.HasTrait(Trait.Object) && !cr.HasTrait(Trait.Pseudocreature) && !cr.Destroyed && !cr.HasTrait(Trait.Illusion)).ToList();
                 foreach (Creature enemy in enemies.Where(cr =>
                              targets.ChosenCreatures.Any(creature => cr.DistanceTo(creature) <= 2)))
                 {
