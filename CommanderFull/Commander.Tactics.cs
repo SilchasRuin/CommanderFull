@@ -1,4 +1,5 @@
-﻿using Dawnsbury.Audio;
+﻿using System.Reflection;
+using Dawnsbury.Audio;
 using Dawnsbury.Core;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb.Common;
@@ -1899,8 +1900,7 @@ public abstract partial class Commander
     {
         CombatAction tactic = new CombatAction(owner, MIllustrations.SlipAndSizzle, "Slip and Sizzle",
                 [MTraits.Commander, MTraits.Tactic, Trait.Basic],
-                "Signal two squadmates within the aura of your commander’s banner; one of these squadmates must be adjacent to an opponent and the other must be capable of casting a spell that deals damage. The first squadmate can attempt to Trip the adjacent opponent as a reaction. If this Trip is successful, the second squadmate can cast a ranged spell that deals damage and takes 2 or fewer actions to cast. This spell is cast as a reaction and must either target the tripped opponent or include the tripped opponent in the spell’s area.\n\nIf the second squadmate cast a spell using slots or Focus Points as part of this tactic, they are slowed 1 until the end of their next turn and do not gain a reaction when they regain actions at the start of their next turn." +
-                "\n{b}Note{/b} Spells with action cost variants (for example: Magic Missile or Scorching Ray) cannot be cast at this time.",
+                "Signal two squadmates within the aura of your commander’s banner; one of these squadmates must be adjacent to an opponent and the other must be capable of casting a spell that deals damage. The first squadmate can attempt to Trip the adjacent opponent as a reaction. If this Trip is successful, the second squadmate can cast a ranged spell that deals damage and takes 2 or fewer actions to cast. This spell is cast as a reaction and must either target the tripped opponent or include the tripped opponent in the spell’s area.\n\nIf the second squadmate cast a spell using slots or Focus Points as part of this tactic, they are slowed 1 until the end of their next turn and do not gain a reaction when they regain actions at the start of their next turn.",
                 Target.MultipleCreatureTargets(
                     new CreatureTarget(RangeKind.Ranged,
                     [
@@ -1973,7 +1973,6 @@ public abstract partial class Commander
                 }
                 tripper.AddQEffect(RespondedToTactic(caster));
                 if (result <= CheckResult.Failure || !CanTakeReaction(useDrilledReactions, mage, drilledTargets, caster)) return;
-                Possibilities spells = CreateSpells(mage);
                 bool usedDrilled2 = false;
                 bool usedReaction2 = false;
                 bool choice = await mage.AskForConfirmation(mage.Illustration,
@@ -1984,104 +1983,186 @@ public abstract partial class Commander
                         : " as a reaction? If you cast a focus spell or leveled spell, you will be slowed 1 until the end of your next turn and you do not gain a reaction at the start of your next turn."),
                     "Yes");
                 if (!choice) return;
-                List<CombatAction> actions = [];
-                actions.AddRange(spells.CreateActions(true).Select(action => action.Action));
-                CombatAction[] array = actions.ToArray();
-                RequestResult requestResult = await mage.Battle.SendRequest(new ComboBoxInputRequest<CombatAction>(mage,
-                    "What spell to cast?", mage.Illustration, "Fulltext search...", array,
-                    item => new ComboBoxInformation(item.Illustration, item.Name, item.Description,
-                        item.SpellId.ToStringOrTechnical()), item => $"Cast {{i}}{item.Name.ToLower()}{{/i}}",
-                    "Cancel"));
-                switch (requestResult.ChosenOption)
+                mage.AddQEffect(RespondedToTactic(caster));
+                if (useDrilledReactions && IsDrilledTarget(drilledTargets, mage))
                 {
-                    case CancelOption:
-                        return;
-                    case ComboBoxInputOption<CombatAction> chosenOption2:
-                    {
-                        mage.AddQEffect(RespondedToTactic(caster));
-                        if (useDrilledReactions && IsDrilledTarget(drilledTargets, mage))
-                        {
-                            caster.AddQEffect(DrilledReactionsExpended(caster));
-                            usedDrilled2 = true;
-                        }
-                        else
-                        {
-                            mage.Actions.UseUpReaction();
-                            usedReaction2 = true;
-                        }
-
-                        QEffect forcedChoice = new()
-                        {
-                            YouBeginAction = async (effect, action) =>
-                            {
-                                if (!spells.CreateActions(true).Contains(action)) return;
-                                if (!action.Targets(which))
-                                {
-                                    if (!action.Target.IsAreaTarget &&
-                                        action.Target is not MultipleCreatureTargetsTarget)
-                                    {
-                                        action.ChosenTargets = ChosenTargets.CreateSingleTarget(which);
-                                    }
-                                    else
-                                    {
-                                        if (await mage.AskForConfirmation(mage.Illustration,
-                                                "Your spell did not target " + which.Name +
-                                                " would you like to cast the spell again?", "Yes", "No"))
-                                        {
-                                            action.RevertRequested = true;
-                                            await mage.Battle.GameLoop.FullCast(action);
-                                            action.Disrupted = true;
-                                        }
-                                        else
-                                        {
-                                            action.RevertRequested = true;
-                                            if (usedDrilled2)
-                                                RemoveDrilledExpended(caster);
-                                            if (usedReaction2)
-                                                mage.Actions.RefundReaction();
-                                            action.Disrupted = true;
-                                            effect.ExpiresAt = ExpirationCondition.Immediately;
-                                        }
-                                    }
-                                }
-                            },
-                            AfterYouTakeAction = (effect, action) =>
-                            {
-                                if (!spells.CreateActions(true).Contains(action) || action.RevertRequested)
-                                    return Task.CompletedTask;
-                                if (!action.HasTrait(Trait.Cantrip) ||
-                                    action.SpellInformation?.PsychicAmpInformation?.Amped == true)
-                                {
-                                    mage.AddQEffect(QEffect.Slowed(1).WithExpirationAtEndOfOwnerTurn()
-                                        .WithCannotExpireThisTurn());
-                                    mage.AddQEffect(new QEffect()
-                                    {
-                                        StartOfYourPrimaryTurn = (qEffect, _) =>
-                                        {
-                                            mage.Actions.UseUpReaction();
-                                            qEffect.ExpiresAt = ExpirationCondition.Immediately;
-                                            return Task.CompletedTask;
-                                        }
-                                    });
-                                }
-
-                                effect.ExpiresAt = ExpirationCondition.Immediately;
-                                return Task.CompletedTask;
-                            },
-                            ExpiresAt = ExpirationCondition.ExpiresAtEndOfSourcesTurn,
-                            Source = caster
-                        };
-                        mage.AddQEffect(forcedChoice);
-                        CombatAction action = chosenOption2.SelectedObject;
-                        action.SpentActions = 2;
-                        if (!await caster.Battle.GameLoop.FullCast(action))
-                        {
-                            Sfxs.Play(SfxName.Unallowed);
-                            forcedChoice.ExpiresAt = ExpirationCondition.Immediately;
-                        }
-                        break;
-                    }
+                    caster.AddQEffect(DrilledReactionsExpended(caster));
+                    usedDrilled2 = true;
                 }
+                else
+                {
+                    mage.Actions.UseUpReaction();
+                    usedReaction2 = true;
+                }
+                Creature? original = mage.Battle.ActiveCreature;
+                mage.Battle.ActiveCreature = mage;
+                Possibilities spells = CreateSpells2(mage);
+                typeof(Creature).InvokeMember("Possibilities", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.SetProperty | BindingFlags.Instance, null, mage,
+                    [spells]);
+                QEffect forcedChoice = new()
+                {
+                    YouBeginAction = async (effect, action) =>
+                    {
+                        // if (!mage.Spellcasting!.Sources.Any(source => source.HasSpell(action))) return;
+                        if (!action.Targets(which))
+                        {
+                            if (!action.Target.IsAreaTarget &&
+                                action.Target is not MultipleCreatureTargetsTarget)
+                            {
+                                action.ChosenTargets = ChosenTargets.CreateSingleTarget(which);
+                            }
+                            else
+                            {
+                                if (await mage.AskForConfirmation(mage.Illustration,
+                                        "Your spell did not target " + which.Name +
+                                        " would you like to cast the spell again?", "Yes", "No"))
+                                {
+                                    action.RevertRequested = true;
+                                    await mage.Battle.GameLoop.FullCast(action);
+                                    action.Disrupted = true;
+                                }
+                                else
+                                {
+                                    action.RevertRequested = true;
+                                    if (usedDrilled2)
+                                        RemoveDrilledExpended(caster);
+                                    if (usedReaction2)
+                                        mage.Actions.RefundReaction();
+                                    action.Disrupted = true;
+                                    effect.ExpiresAt = ExpirationCondition.Immediately;
+                                }
+                            }
+                        }
+                    },
+                    AfterYouTakeAction = (effect, action) =>
+                    {
+                        if (/*!mage.Spellcasting!.Sources.Any(source => source.HasSpell(action)) ||*/ action.RevertRequested)
+                            return Task.CompletedTask;
+                        if (!action.HasTrait(Trait.Cantrip) ||
+                            action.SpellInformation?.PsychicAmpInformation?.Amped == true)
+                        {
+                            mage.AddQEffect(QEffect.Slowed(1).WithExpirationAtEndOfOwnerTurn()
+                                .WithCannotExpireThisTurn());
+                            mage.AddQEffect(new QEffect()
+                            {
+                                StartOfYourPrimaryTurn = (qEffect, _) =>
+                                {
+                                    mage.Actions.UseUpReaction();
+                                    qEffect.ExpiresAt = ExpirationCondition.Immediately;
+                                    return Task.CompletedTask;
+                                }
+                            });
+                        }
+
+                        effect.ExpiresAt = ExpirationCondition.Immediately;
+                        return Task.CompletedTask;
+                    },
+                    ExpiresAt = ExpirationCondition.ExpiresAtEndOfSourcesTurn,
+                    Source = caster
+                };
+                mage.AddQEffect(forcedChoice);
+                List<Option> options = await mage.Battle.GameLoop.CreateActions(mage, mage.Possibilities, null);
+                mage.Battle.GameLoopCallback.AfterActiveCreaturePossibilitiesRegenerated();
+                await mage.Battle.GameLoop.OfferOptions(mage, options, true);
+                mage.Battle.ActiveCreature = original;
+                // List<CombatAction> actions = [];
+                // actions.AddRange(spells.CreateActions(true).Select(action => action.Action));
+                // CombatAction[] array = actions.ToArray();
+                // RequestResult requestResult = await mage.Battle.SendRequest(new ComboBoxInputRequest<CombatAction>(mage,
+                //     "What spell to cast?", mage.Illustration, "Fulltext search...", array,
+                //     item => new ComboBoxInformation(item.Illustration, item.Name, item.Description,
+                //         item.SpellId.ToStringOrTechnical()), item => $"Cast {{i}}{item.Name.ToLower()}{{/i}}",
+                //     "Cancel"));
+                // switch (requestResult.ChosenOption)
+                // {
+                //     case CancelOption:
+                //         return;
+                //     case ComboBoxInputOption<CombatAction> chosenOption2:
+                //     {
+                //         mage.AddQEffect(RespondedToTactic(caster));
+                //         if (useDrilledReactions && IsDrilledTarget(drilledTargets, mage))
+                //         {
+                //             caster.AddQEffect(DrilledReactionsExpended(caster));
+                //             usedDrilled2 = true;
+                //         }
+                //         else
+                //         {
+                //             mage.Actions.UseUpReaction();
+                //             usedReaction2 = true;
+                //         }
+                //
+                //         QEffect forcedChoice = new()
+                //         {
+                //             YouBeginAction = async (effect, action) =>
+                //             {
+                //                 if (!spells.CreateActions(true).Contains(action)) return;
+                //                 if (!action.Targets(which))
+                //                 {
+                //                     if (!action.Target.IsAreaTarget &&
+                //                         action.Target is not MultipleCreatureTargetsTarget)
+                //                     {
+                //                         action.ChosenTargets = ChosenTargets.CreateSingleTarget(which);
+                //                     }
+                //                     else
+                //                     {
+                //                         if (await mage.AskForConfirmation(mage.Illustration,
+                //                                 "Your spell did not target " + which.Name +
+                //                                 " would you like to cast the spell again?", "Yes", "No"))
+                //                         {
+                //                             action.RevertRequested = true;
+                //                             await mage.Battle.GameLoop.FullCast(action);
+                //                             action.Disrupted = true;
+                //                         }
+                //                         else
+                //                         {
+                //                             action.RevertRequested = true;
+                //                             if (usedDrilled2)
+                //                                 RemoveDrilledExpended(caster);
+                //                             if (usedReaction2)
+                //                                 mage.Actions.RefundReaction();
+                //                             action.Disrupted = true;
+                //                             effect.ExpiresAt = ExpirationCondition.Immediately;
+                //                         }
+                //                     }
+                //                 }
+                //             },
+                //             AfterYouTakeAction = (effect, action) =>
+                //             {
+                //                 if (!spells.CreateActions(true).Contains(action) || action.RevertRequested)
+                //                     return Task.CompletedTask;
+                //                 if (!action.HasTrait(Trait.Cantrip) ||
+                //                     action.SpellInformation?.PsychicAmpInformation?.Amped == true)
+                //                 {
+                //                     mage.AddQEffect(QEffect.Slowed(1).WithExpirationAtEndOfOwnerTurn()
+                //                         .WithCannotExpireThisTurn());
+                //                     mage.AddQEffect(new QEffect()
+                //                     {
+                //                         StartOfYourPrimaryTurn = (qEffect, _) =>
+                //                         {
+                //                             mage.Actions.UseUpReaction();
+                //                             qEffect.ExpiresAt = ExpirationCondition.Immediately;
+                //                             return Task.CompletedTask;
+                //                         }
+                //                     });
+                //                 }
+                //
+                //                 effect.ExpiresAt = ExpirationCondition.Immediately;
+                //                 return Task.CompletedTask;
+                //             },
+                //             ExpiresAt = ExpirationCondition.ExpiresAtEndOfSourcesTurn,
+                //             Source = caster
+                //         };
+                //         mage.AddQEffect(forcedChoice);
+                //         CombatAction action = chosenOption2.SelectedObject;
+                //         action.SpentActions = 2;
+                //         if (!await caster.Battle.GameLoop.FullCast(action))
+                //         {
+                //             Sfxs.Play(SfxName.Unallowed);
+                //             forcedChoice.ExpiresAt = ExpirationCondition.Immediately;
+                //         }
+                //         break;
+                //     }
+                // }
             });
         return tactic;
     }

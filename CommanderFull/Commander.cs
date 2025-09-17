@@ -742,30 +742,56 @@ public abstract partial class Commander
         if (drilledTargets.Count == 0) drilledTargets.Add(targets.ChosenCreatures[0]);
         return drilledTargets;
     }
-     private static Possibilities CreateSpells(Creature target)
+
+    private static Possibilities CreateSpells2(Creature target)
      {
-         return target.Possibilities.Filter(ap =>
+         return AlternateTaskImplements.Filter(target.Possibilities, possibility =>
          {
-             if (ap.CombatAction.SpellcastingSource == null || ap.CombatAction.ActionCost > 2) return false;
-             if ((!ap.CombatAction.Description.ContainsIgnoreCase("deal") &&
-                  !ap.CombatAction.Description.ContainsIgnoreCase("attack") &&
-                  !ap.CombatAction.Description.ContainsIgnoreCase("take") &&
-                  !ap.CombatAction.Description.ContainsIgnoreCase("damage")) ||
-                 ap.CombatAction.Description.ContainsIgnoreCase("battleform"))
-                 return false;
-             if (!ap.CombatAction.WillBecomeHostileAction) return false;
-             if (ap.CombatAction.Description.Contains("{b}Range{/b} touch") ||
-                 (!ap.CombatAction.Description.Contains("Range") &&
-                  !ap.CombatAction.Description.Contains("Area") &&
-                  !ap.CombatAction.Description.Contains("line"))) return false;
-             if (!ap.CombatAction.Description.Contains("d4") && !ap.CombatAction.Description.Contains("d6") &&
-                 !ap.CombatAction.Description.Contains("d8") && !ap.CombatAction.Description.Contains("d10") &&
-                 !ap.CombatAction.Description.Contains("d12") &&
-                 !ap.CombatAction.Description.Contains("Deal 40")) return false;
-             ap.CombatAction.ActionCost = 0;
-             ap.RecalculateUsability();
-             return true;
+             switch (possibility)
+             {
+                 case ActionPossibility ap when !SpellDealsDamage(ap.CombatAction):
+                     return false;
+                 case ActionPossibility ap:
+                     ap.CombatAction.ActionCost = 0;
+                     ap.RecalculateUsability();
+                     return true;
+                 case ChooseActionCostThenActionPossibility ap when !SpellDealsDamage(ap.CombatAction):
+                     return false;
+                 case  ChooseActionCostThenActionPossibility ap:
+                     ap.CombatAction.ActionCost = 0;
+                     ap.CombatAction.SpentActions = 2;
+                     if (ap.CombatAction.Target is DependsOnActionsSpentTarget actionTarget)
+                     {
+                         ap.CombatAction.Target = actionTarget.IfTwoActions;
+                     }
+                     AlternateTaskImplements.RecalculateUsability(ap);
+                     return true;
+                 case ChooseVariantThenActionPossibility ap when !SpellDealsDamage(ap.CombatAction):
+                     return false;
+                 case ChooseVariantThenActionPossibility ap:
+                     ap.CombatAction.ActionCost = 0;
+                     AlternateTaskImplements.RecalculateUsability(ap);
+                     return true;
+                 default:
+                     return false;
+             }
          });
+     }
+     private static bool SpellDealsDamage(CombatAction action)
+     {
+         if (action.SpellcastingSource == null || action.ActionCost == 3 || action.ActionCost == -2) return false;
+         if ((!action.Description.ContainsIgnoreCase("deal") &&
+              !action.Description.ContainsIgnoreCase("attack") &&
+              !action.Description.ContainsIgnoreCase("take") &&
+              !action.Description.ContainsIgnoreCase("damage")) ||
+             action.Description.ContainsIgnoreCase("battleform"))
+             return false;
+         // if (!action.WillBecomeHostileAction) return false;
+         if (action.Target == Target.AdjacentCreature()) return false;
+         return action.Description.Contains("d4") || action.Description.Contains("d6") ||
+                action.Description.Contains("d8") || action.Description.Contains("d10") ||
+                action.Description.Contains("d12") ||
+                action.Description.Contains("Deal 40");
      }
 
     private static CombatAction? DetermineBestMeleeStrike(Creature target)
@@ -1363,7 +1389,7 @@ public abstract partial class Commander
     {
         public override Usability Satisfied(Creature source, Creature target)
         {
-            bool canUse = CreateSpells(target).CreateActions(true).Count != 0;
+            bool canUse = target.Spellcasting?.Sources.Any(list => list.Spells.Any(SpellDealsDamage)) ?? false;
             return !canUse ? Usability.NotUsableOnThisCreature(target.Name + " cannot cast a damaging spell.") : Usability.Usable;
         }
     }

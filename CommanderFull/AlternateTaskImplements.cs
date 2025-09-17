@@ -1,4 +1,5 @@
-﻿using Dawnsbury.Core.CombatActions;
+﻿using System.Reflection;
+using Dawnsbury.Core.CombatActions;
 using Dawnsbury.Core.Coroutines.Options;
 using Dawnsbury.Core.Coroutines.Requests;
 using Dawnsbury.Core.Creatures;
@@ -27,52 +28,75 @@ public abstract class AlternateTaskImplements
             if (await (await selectedCreature.Battle.SendRequest(new AdvancedRequest(selectedCreature, midSpell ? "Choose what action to take." : selectedCreature + "'s turn.", options) { IsMainTurn = !midSpell, IsStandardMovementRequest = !midSpell })).ChosenOption.Action()) return true;
         }
     }
-    
-    public static List<ICombatAction> CreateActions(bool usableOnly, Possibilities possibilities)
+    public static Possibilities Filter(Possibilities possibilities0, Func<Possibility, bool> keepOnlyWhat)
     {
-      return possibilities.Sections.SelectMany(section => CreateIActions(usableOnly, "Root", section)).ToList();
-    }
-    
-    public static IEnumerable<ICombatAction> CreateIActions(bool usableOnly, string possibilityChain, PossibilitySection section)
-  {
-    string chain = $"{possibilityChain}:{(section.PossibilitySectionId == PossibilitySectionId.None ? section.Name : section.PossibilitySectionId.ToStringOrTechnical())}";
-    int index = 0;
-    foreach (Possibility possibility in section.Possibilities)
-    {
-      if (possibility is SubmenuPossibility submenuPossibility)
-      {
-        IEnumerator<ICombatAction>? enumerator = submenuPossibility.CreateOptions((usableOnly ? 1 : 0) != 0, $"{chain}:{(submenuPossibility.SubmenuId == SubmenuId.None ? submenuPossibility.Caption : submenuPossibility.SubmenuId.ToStringOrTechnical())}[{index.ToString()}]").GetEnumerator();
-        using var enumerator1 = enumerator as IDisposable;
-        while (enumerator.MoveNext())
-          yield return enumerator.Current;
-        enumerator = null;
-      }
-      else
-      {
-        string str = $"{chain}>{possibility.Caption}:{index.ToString()}";
-        if (possibility is ActionPossibility actionPossibility3)
+        Possibilities possibilities = possibilities0.Filter(_ => false);
+        foreach (PossibilitySection section in possibilities0.Sections)
         {
-          if (!usableOnly || possibility.Usable)
-          {
-            actionPossibility3.CombatAction.PossibilityChain = str;
-            yield return actionPossibility3.CombatAction;
-          }
+            PossibilitySection? possibilitySection = Filter(keepOnlyWhat, section);
+            if (possibilitySection != null)
+                possibilities.Sections.Add(possibilitySection);
         }
-        else if (possibility is ChooseActionCostThenActionPossibility actionPossibility2)
+        return possibilities;
+    }
+    public static PossibilitySection? Filter(Func<Possibility, bool> keepOnlyWhat, PossibilitySection possibilitySectionO)
+    {
+        PossibilitySection possibilitySection = new(possibilitySectionO.Name);
+        foreach (Possibility possibility in possibilitySectionO.Possibilities)
         {
-          if (!usableOnly || actionPossibility2.Usable)
-            yield return new ChooseActionCostThenCombatAction(2, actionPossibility2.CombatAction)
+            if (possibility is SubmenuPossibility submenuPossibility1)
             {
-              PossibilityChain = str
-            };
+                SubmenuPossibility? submenuPossibility = Filter(keepOnlyWhat, submenuPossibility1);
+                if (submenuPossibility != null)
+                    possibilitySection.Possibilities.Add(submenuPossibility);
+            }
+            else if (keepOnlyWhat(possibility))
+                possibilitySection.Possibilities.Add(possibility);
         }
-        else if (possibility is ChooseVariantThenActionPossibility actionPossibility1 && (!usableOnly || actionPossibility1.Usable))
-          yield return new ChooseVariantThenCombatAction(actionPossibility1.SpellVariant, actionPossibility1.CombatAction)
-          {
-            PossibilityChain = str
-          };
-      }
-      ++index;
+        return possibilitySection.Possibilities.Count == 0 ? null : possibilitySection;
     }
-  }
+    
+    public static SubmenuPossibility? Filter(Func<Possibility, bool> keepOnlyWhat, SubmenuPossibility possibility)
+    {
+        SubmenuPossibility submenuPossibility = new(possibility.Illustration, possibility.Caption, possibility.PossibilitySize);
+        foreach (PossibilitySection subsection in possibility.Subsections)
+        {
+            PossibilitySection? possibilitySection = Filter(keepOnlyWhat, subsection);
+            if (possibilitySection != null)
+                submenuPossibility.Subsections.Add(possibilitySection);
+        }
+        return submenuPossibility.Subsections.Count != 0 ? submenuPossibility : null;
+    }
+    
+    public static void RecalculateUsability(Possibility possibility)
+    {
+        CombatAction action = possibility switch
+        {
+            ActionPossibility ap => ap.CombatAction,
+            ChooseActionCostThenActionPossibility acap => acap.CombatAction,
+            ChooseVariantThenActionPossibility vap => vap.CombatAction,
+            _ => throw new ArgumentOutOfRangeException(nameof(possibility), possibility, null)
+        };
+        Usability use = action.Target.CanBeginToUse(action.Owner);
+        ForceSet(possibility, "Usable", use.CanBeUsed);
+        ForceSet(possibility, "UnusableWhy", use.UnusableReason);
+    }
+    
+    public static void ForceSet(object obj, string propertyName, object? value)
+    {
+        Type type = obj.GetType();
+        FieldInfo? backing = type.GetField($"<{propertyName}>k__BackingField",
+            BindingFlags.NonPublic | BindingFlags.Instance);
+        if (backing != null)
+        {
+            backing.SetValue(obj, value);
+            return;
+        }
+        FieldInfo? field = type.GetField(propertyName.ToLower(),
+            BindingFlags.NonPublic | BindingFlags.Instance);
+        if (field != null)
+        {
+            field.SetValue(obj, value);
+        }
+    }
 }
