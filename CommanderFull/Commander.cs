@@ -1389,7 +1389,7 @@ public abstract partial class Commander
     {
         public override Usability Satisfied(Creature source, Creature target)
         {
-            bool canUse = target.Spellcasting?.Sources.Any(list => list.Spells.Any(SpellDealsDamage)) ?? false;
+            bool canUse = target.Spellcasting?.Sources.Any(list => list.Spells.Any(SpellDealsDamage) || list.Cantrips.Any(SpellDealsDamage)) ?? false;
             return !canUse ? Usability.NotUsableOnThisCreature(target.Name + " cannot cast a damaging spell.") : Usability.Usable;
         }
     }

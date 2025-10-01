@@ -1468,7 +1468,7 @@ public abstract partial class Commander
                     case 2:
                     {
                         Creature? enemy = caster.Battle.AllCreatures.FirstOrDefault(cr =>
-                            cr.IsAdjacentTo(targets.ChosenCreatures[0]) && cr.IsAdjacentTo(targets.ChosenCreatures[1]));
+                            cr.IsAdjacentTo(targets.ChosenCreatures[0]) && cr.IsAdjacentTo(targets.ChosenCreatures[1]) && cr.EnemyOf(caster));
                         if (enemy != null)
                         {
                             int dc = caster.ClassDC();
