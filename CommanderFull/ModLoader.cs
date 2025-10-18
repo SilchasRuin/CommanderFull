@@ -17,7 +17,6 @@ using Dawnsbury.Display.Controls.Statblocks;
 using Dawnsbury.Display.Illustrations;
 using Dawnsbury.Display.Text;
 using Dawnsbury.Modding;
-using Dawnsbury.Mods.DawnniExpanded;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
 using static CommanderFull.ModData;
@@ -226,9 +225,9 @@ public class ModLoader
                                Proficiency.Trained), "You must be trained in Deception.");
             }
 
-            if (ModManager.TryParse("DawnniEx", out Trait _))
+            if (Dawnni)
             {
-                FeatRecallWeakness.CombatAssessment.Traits = [];
+                DawnniRequired.ModCombatAssessment();
             }
         };
         //shielded recovery

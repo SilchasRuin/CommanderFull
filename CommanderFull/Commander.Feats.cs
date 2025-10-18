@@ -25,7 +25,6 @@ using Dawnsbury.Core.Tiles;
 using Dawnsbury.Display;
 using Dawnsbury.Display.Illustrations;
 using Dawnsbury.Modding;
-using Dawnsbury.Mods.DawnniExpanded;
 using Dawnsbury.ThirdParty.SteamApi;
 using Microsoft.Xna.Framework;
 using static CommanderFull.ModData;
@@ -114,7 +113,7 @@ public abstract partial class Commander
                 "You make a telegraphed attack to learn about your foe.",
                 $"Make a melee Strike. On a hit, you can immediately attempt a check to {UseCreatedTooltip("Recall Weakness")} about the target. On a critical hit, you gain a +2 circumstance bonus to the check to Recall Weakness. The target is temporarily immune to Combat Assessment for 1 day.",
                 [MTraits.Commander, Trait.Fighter]);
-            CombatAssessmentLogic(combatAssessment);
+            DawnniRequired.CombatAssessmentLogic(combatAssessment);
             yield return combatAssessment;
         }
 
@@ -163,7 +162,7 @@ public abstract partial class Commander
         SetUpStrikeLogic(setupStrike);
         yield return setupStrike;
 
-        if (ModManager.TryParse("DawnniEx", out Trait _))
+        if (Dawnni)
         {
             TrueFeat rapidAssessment = new(MFeatNames.RapidAssessment, 2, "You quickly evaluate your enemies.",
                 $"Attempt a check to {UseCreatedTooltip("Recall Weakness")} against one creature you are observing.",
@@ -199,13 +198,13 @@ public abstract partial class Commander
         BannersInspirationLogic(bannerInspire);
         yield return bannerInspire;
 
-        if (ModManager.TryParse("DawnniEx", out Trait _))
+        if (Dawnni)
         {
             TrueFeat observationalAnalysis = new(MFeatNames.ObservationalAnalysis, 4,
                 "You are able to rapidly discern relevant details about your opponents in the heat of combat.",
                 $"When you use Combat Assessment against a target that you or an ally has targeted with a Strike or spell since the start of your last turn, you get a +2 circumstance bonus to the {UseCreatedTooltip("Recall Weakness")} check (+4 if the Strike from Combat Assessment is a critical hit).",
                 [MTraits.Commander]);
-            ObservationalAnalysisLogic(observationalAnalysis);
+            DawnniRequired.ObservationalAnalysisLogic(observationalAnalysis);
             yield return observationalAnalysis;
         }
 
@@ -289,7 +288,7 @@ public abstract partial class Commander
         RallyingBannerLogic(rallyingBanner);
         yield return rallyingBanner;
 
-        if (ModManager.TryParse("DawnniEx", out Trait _))
+        if (Dawnni)
         {
             yield return new TrueFeat(MFeatNames.UnrivaledAnalysis, 8,
                 "Your experience allows you to derive even more information about your opponents from a mere glance.",
@@ -318,81 +317,6 @@ public abstract partial class Commander
     }
 
     #region logics
-
-    private static void CombatAssessmentLogic(TrueFeat feat)
-    {
-        feat.WithActionCost(1).WithPermanentQEffect(null,
-            qf => qf.ProvideStrikeModifier = item =>
-            {
-                CombatAction strike = qf.Owner.CreateStrike(item);
-                strike.Illustration = new SideBySideIllustration(strike.Illustration,
-                    IllustrationName.NarratorBook);
-                strike.Name = "Combat Assessment " + strike.Name;
-                strike.Traits.Add(Trait.Basic);
-                strike.ActionId = FeatRecallWeakness.CombatAssessmentActionID;
-                strike.Description = StrikeRules.CreateBasicStrikeDescription2(strike.StrikeModifiers,
-                    additionalSuccessText: "Recall Weakness against the target",
-                    additionalCriticalSuccessText: "Gain a +2 circumstance bonus to the check to Recall Weakness.",
-                    additionalAftertext: "The target is temporarily immune to Combat Assessment for 1 day.");
-                strike.StrikeModifiers.OnEachTarget +=
-                    (Func<Creature, Creature, CheckResult, Task>)(async (caster, target, checkResult) =>
-                    {
-                        target.AddQEffect(QEffect.ImmunityToTargeting(FeatRecallWeakness.CombatAssessmentActionID,
-                            caster));
-                        bool observed = target.FindQEffect(MQEffectIds.Observed)?.Source == caster;
-                        QEffect crit = new(
-                            (observed ? "Observational Analysis" : "Combat Assessment") + " (Critical Success)",
-                            "",
-                            ExpirationCondition.ExpiresAtEndOfAnyTurn, null)
-                        {
-                            BonusToSkillChecks =
-                                ((Func<Skill, CombatAction, Creature, Bonus?>)((_, action, _) =>
-                                    action.ActionId != FeatRecallWeakness.ActionID
-                                        ? null
-                                        : new Bonus(observed ? 4 : 2, BonusType.Circumstance,
-                                            (observed ? "Observational Analysis" : "Combat Assessment") +
-                                            " (Critical Success)")))!
-                        };
-                        QEffect analysis = new("Observational Analysis", "",
-                            ExpirationCondition.ExpiresAtEndOfAnyTurn, null)
-                        {
-                            BonusToSkillChecks =
-                                ((Func<Skill, CombatAction, Creature, Bonus?>)((_, action, _) =>
-                                    action.ActionId != FeatRecallWeakness.ActionID
-                                        ? null
-                                        : new Bonus(2, BonusType.Circumstance,
-                                            "Observational Analysis")))!
-                        };
-                        switch (checkResult)
-                        {
-                            case < CheckResult.Success:
-                                return;
-                            case CheckResult.Success:
-                                if (observed)
-                                {
-                                    caster.AddQEffect(analysis);
-                                }
-
-                                break;
-                            case CheckResult.CriticalSuccess:
-                                strike.Owner.AddQEffect(crit);
-                                break;
-                        }
-
-                        TBattle battle = strike.Owner.Battle;
-                        CombatAction recall = FeatRecallWeakness.RecallWeaknessAction(strike.Owner);
-                        recall.WithActionCost(0);
-                        recall.Target = strike.Target;
-                        bool done = await battle.GameLoop.FullCast(recall, ChosenTargets.CreateSingleTarget(target));
-                        if (done)
-                        {
-                            crit.ExpiresAt = ExpirationCondition.Immediately;
-                            analysis.ExpiresAt = ExpirationCondition.Immediately;
-                        }
-                    });
-                return item.HasTrait(Trait.Melee) ? strike : null;
-            });
-    }
 
     private static void ArmorRegimentLogic(TrueFeat feat)
     {
@@ -742,11 +666,11 @@ public abstract partial class Commander
             qf =>
             {
                 Creature self = qf.Owner;
-                List<string> preparedTactics = [];
-                List<string> potentialTactics = [];
                 CalculatedCharacterSheetValues? calculated = self.PersistentCharacterSheet?.Calculated;
                 qf.StartOfCombat = async _ =>
                 {
+                    List<string> preparedTactics = [];
+                    List<string> potentialTactics = [];
                     if (calculated?.AllFeatGrants is not null)
                     {
                         Dictionary<string, object?> tags = calculated.Tags.Where(pair =>
@@ -764,7 +688,6 @@ public abstract partial class Commander
                         {
                             potentialTactics.Remove(potentialTactic);
                         }
-
                         preparedTactics.Add("pass");
                         ChoiceButtonOption choice = await self.AskForChoiceAmongButtons(self.Illustration,
                             "Would you like to use Adaptive Stratagem to replace a prepared tactic?",
@@ -777,11 +700,11 @@ public abstract partial class Commander
                         );
                         if (potentialTactics[choice2.Index] == "cancel") return;
                         TacticsDict.TryGetValue(preparedTactics[choice.Index], out FeatName name);
-                        self.RemoveAllQEffects(qff => (FeatName?)qff.Tag is { } ftName && ftName == name);
+                        self.RemoveAllQEffects(qff => qff.Tag is FeatName ftName && ftName == name);
                         PrereqsDict.TryGetValue(potentialTactics[choice2.Index], out FeatName value);
                         PrereqsToTactics.TryGetValue(value, out FeatName tactic);
                         QEffect? tacticQf = TacticsQFs(self)
-                            .FirstOrDefault(qff => (FeatName?)qff.Tag is { } here && here == tactic);
+                            .FirstOrDefault(qff => qff.Tag is FeatName here && here == tactic);
                         if (tacticQf != null) self.AddQEffect(tacticQf);
                     }
                 };
@@ -1016,7 +939,7 @@ public abstract partial class Commander
                             [MTraits.Brandish, MTraits.Commander, Trait.Manipulate, Trait.Basic],
                             "You and any ally adjacent to you have concealment from ranged attacks until the start of your next turn",
                             (Target.AlliesOnlyEmanation(1) as AreaTarget)!.WithAdditionalRequirementOnCaster(creature =>
-                                new BrandishRequirement().Satisfied(creature, creature)))
+                                new Commander.BrandishRequirement().Satisfied(creature, creature)))
                         .WithActionCost(1).WithSoundEffect(SfxName.ItemAction)
                         .WithEffectOnEachTarget((action, caster, target, _) =>
                         {
@@ -1073,9 +996,9 @@ public abstract partial class Commander
                             ],
                             "Each ally in your banner's aura reduces their frightened and stupefied conditions by 1, and can make a Will save against a standard level-based DC for your level, and on a success or better remove the Confused or Paralyzed condition. Regardless of the result, any ally that attempts this save is temporarily immune to Banner's Inspiration for 10 minutes.",
                             new EmanationTarget(100, false)
-                                .WithAdditionalRequirementOnCaster(cr => new BrandishRequirement().Satisfied(cr, cr))
+                                .WithAdditionalRequirementOnCaster(cr => new Commander.BrandishRequirement().Satisfied(cr, cr))
                                 .WithIncludeOnlyIf((_, creature) =>
-                                    new InBannerAuraRequirement().Satisfied(effect.Owner, creature)))
+                                    new Commander.InBannerAuraRequirement().Satisfied(effect.Owner, creature)))
                         .WithActionCost(1).WithSoundEffect(SfxName.Drum)
                         .WithActionId(MActionIds.BannersInspiration)
                         .WithEffectOnEachTarget((spell, caster, target, _) =>
@@ -1107,45 +1030,6 @@ public abstract partial class Commander
                             return Task.CompletedTask;
                         });
                     return new ActionPossibility(inspiration).WithPossibilityGroup("Abilities");
-                };
-            });
-    }
-
-    private static void ObservationalAnalysisLogic(TrueFeat feat)
-    {
-        feat.WithPrerequisite(MFeatNames.CombatAssessment, "Combat Assessment").WithPermanentQEffect(
-            $"When you use Combat Assessment against a target that you or an ally has targeted with a Strike or spell since the start of your last turn, you get a +2 circumstance bonus to the {UseCreatedTooltip("Recall Weakness")} check (+4 if the Strike from Combat Assessment is a critical hit).",
-            qf =>
-            {
-                Creature self = qf.Owner;
-                var apply = true;
-                qf.StartOfYourPrimaryTurn = (_, _) =>
-                {
-                    if (!apply) return Task.CompletedTask;
-                    qf.AddGrantingOfTechnical(cr => cr.EnemyOf(self), qfTech =>
-                    {
-                        qfTech.YouAreTargeted = (_, action) =>
-                        {
-                            if (action.SpellInformation == null || !action.HasTrait(Trait.Strike))
-                                return Task.CompletedTask;
-                            if (action.Owner == self ||
-                                self.Battle.AllCreatures.Any(cr =>
-                                    cr.FriendOfAndNotSelf(self) && action.Owner == cr))
-                            {
-                                qfTech.Owner.AddQEffect(
-                                    new QEffect(ExpirationCondition.CountsDownAtStartOfSourcesTurn)
-                                    {
-                                        Value = 2,
-                                        Id = MQEffectIds.Observed,
-                                        Source = self
-                                    });
-                            }
-
-                            return Task.CompletedTask;
-                        };
-                    });
-                    apply = false;
-                    return Task.CompletedTask;
                 };
             });
     }
@@ -1689,9 +1573,9 @@ public abstract partial class Commander
                         ],
                         $"You and all allies within the aura of your commander's banner when you use this action gain resistance {owner.Abilities.Intelligence} to bludgeoning, piercing, and slashing damage until the start of your next turn.",
                         Target.Emanation(GetBannerRadius(owner))
-                            .WithAdditionalRequirementOnCaster(cr => new BrandishRequirement().Satisfied(cr, cr))
+                            .WithAdditionalRequirementOnCaster(cr => new Commander.BrandishRequirement().Satisfied(cr, cr))
                             .WithIncludeOnlyIf((_, cr) =>
-                                new InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
+                                new Commander.InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
                     .WithActionCost(1).WithSoundEffect(SfxName.BeastRoar)
                     .WithEffectOnEachTarget((spell, caster, target, _) =>
                     {
@@ -1728,9 +1612,9 @@ public abstract partial class Commander
                         ],
                         $"You restore {4 + (owner.Level - 8) / 2}d6 Hit Points to each ally within the aura of your commander's banner. You may only use Rallying Banner once per encounter.",
                         Target.Emanation(GetBannerRadius(owner))
-                            .WithAdditionalRequirementOnCaster(cr => new BrandishRequirement().Satisfied(cr, cr))
+                            .WithAdditionalRequirementOnCaster(cr => new Commander.BrandishRequirement().Satisfied(cr, cr))
                             .WithIncludeOnlyIf((_, cr) =>
-                                new InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
+                                new Commander.InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
                     .WithActionCost(1).WithSoundEffect(SfxName.Healing).WithActionId(MActionIds.RallyBanner)
                     .WithEffectOnChosenTargets(async (spell, caster, targets) =>
                     {

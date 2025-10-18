@@ -15,6 +15,7 @@ namespace CommanderFull;
 
 public abstract class ModData
 {
+    public static bool Dawnni = ModManager.TryParse("DawnniEx", out Trait _);
     public abstract class MTraits
     {
         public static readonly Trait Commander = ModManager.RegisterTrait("Commander", new TraitProperties("Commander", true) { IsClassTrait = true });

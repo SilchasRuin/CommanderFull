@@ -141,7 +141,7 @@ internal static class AltAttach
         equipment.Price += runestone.Price;
         if (runestone.Level > equipment.Level)
             equipment.Level = runestone.Level;
-        runestone.RuneProperties!.ModifyItem(equipment);
+        runestone.RuneProperties!.ApplyRuneOntoItem(runestone, equipment);
         if (!string.IsNullOrWhiteSpace(equipment.Description))
             equipment.Description += "\n";
         equipment.Description = $"{equipment.Description}{{b}}{runestone.RuneProperties.Prefix.Capitalize()}.{{/b}} {runestone.RuneProperties.RulesText}";
