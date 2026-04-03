@@ -1229,7 +1229,7 @@ public abstract partial class Commander
                     var dc = caster.ClassDC(MTraits.Commander);
                     if (enemy.IsImmuneTo(Trait.Mental) || enemy.IsImmuneTo(Trait.Fear) ||
                         enemy.IsImmuneTo(Trait.Emotion)) continue;
-                    CheckResult savingThrow = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Will, dc);
+                    CheckResult savingThrow = await CommonSpellEffects.RollSavingThrowAsync(enemy, spell, Defense.Will, dc);
                     QEffect flee = QEffect.Fleeing(caster);
                     flee.ExpiresAt = ExpirationCondition.ExpiresAtEndOfYourTurn;
                     switch (savingThrow)
@@ -1473,7 +1473,7 @@ public abstract partial class Commander
                         {
                             int dc = caster.ClassDC();
                             CheckResult savingThrow =
-                                CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Reflex, dc);
+                                await CommonSpellEffects.RollSavingThrowAsync(enemy, spell, Defense.Reflex, dc);
                             if (savingThrow <= CheckResult.Failure)
                                 enemy.AddQEffect(QEffect.Prone());
                         }
@@ -1651,7 +1651,7 @@ public abstract partial class Commander
                         if (enemy.IsImmuneTo(Trait.Emotion) || enemy.IsImmuneTo(Trait.Fear) ||
                             enemy.IsImmuneTo(Trait.Mental)) break;
                         enemy.AddQEffect(penaltyQf);
-                        CheckResult save = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Will,
+                        CheckResult save = await CommonSpellEffects.RollSavingThrowAsync(enemy, spell, Defense.Will,
                             caster.ClassDC(MTraits.Commander));
                         if (save == CheckResult.Failure) enemy.AddQEffect(QEffect.Frightened(1));
                         else if (save == CheckResult.CriticalFailure) enemy.AddQEffect(QEffect.Frightened(2));
@@ -1668,7 +1668,7 @@ public abstract partial class Commander
                             List<CheckResult> goodResults2 =
                                 results2.Where(result => result >= CheckResult.Success).ToList();
                             if (goodResults2.Count == 0) continue;
-                            CheckResult save2 = CommonSpellEffects.RollSavingThrow(enemy2, spell, Defense.Will,
+                            CheckResult save2 = await CommonSpellEffects.RollSavingThrowAsync(enemy2, spell, Defense.Will,
                                 caster.ClassDC(MTraits.Commander));
                             if (save2 == CheckResult.Failure) enemy2.AddQEffect(QEffect.Frightened(1));
                             else if (save2 == CheckResult.CriticalFailure) enemy2.AddQEffect(QEffect.Frightened(2));
@@ -1707,7 +1707,7 @@ public abstract partial class Commander
                 int moved = 0;
                 QEffect stateCheck = new()
                 {
-                    StateCheck = qf =>
+                    StateCheckWithVisibleChanges = async qf =>
                     {
                         Creature self = qf.Owner;
                         if (self.AnimationData.LongMovement == null) return;
@@ -1722,7 +1722,7 @@ public abstract partial class Commander
                             {
                                 Id = MQEffectIds.BuckleBlitz,
                             });
-                            CheckResult save = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Reflex,
+                            CheckResult save = await CommonSpellEffects.RollSavingThrowAsync(enemy, spell, Defense.Reflex,
                                 caster.ClassDC(MTraits.Commander));
                             if (save == CheckResult.CriticalFailure)
                                 enemy.AddQEffect(QEffect.Clumsy(2).WithExpirationAtStartOfSourcesTurn(caster, 1));
@@ -1813,7 +1813,7 @@ public abstract partial class Commander
                 var moved = 0;
                 QEffect stateCheck = new()
                 {
-                    StateCheck = qf =>
+                    StateCheckWithVisibleChanges = async qf =>
                     {
                         Creature self = qf.Owner;
                         if (self.AnimationData.LongMovement == null) return;
@@ -1828,7 +1828,7 @@ public abstract partial class Commander
                             {
                                 Id = MQEffectIds.StupefyingRaid
                             });
-                            CheckResult save = CommonSpellEffects.RollSavingThrow(enemy, spell, Defense.Will,
+                            CheckResult save = await CommonSpellEffects.RollSavingThrowAsync(enemy, spell, Defense.Will,
                                 caster.ClassDC(MTraits.Commander));
                             if (save == CheckResult.CriticalFailure)
                                 enemy.AddQEffect(QEffect.Stupefied(2).WithExpirationAtStartOfSourcesTurn(caster, 1));

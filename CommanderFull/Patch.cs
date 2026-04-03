@@ -145,14 +145,14 @@ internal static class AltAttach
         if (!string.IsNullOrWhiteSpace(equipment.Description))
             equipment.Description += "\n";
         equipment.Description = $"{equipment.Description}{{b}}{runestone.RuneProperties.Prefix.Capitalize()}.{{/b}} {runestone.RuneProperties.RulesText}";
-        equipment.Name = itemTemplate.Name;
+        equipment.ProsaicName = itemTemplate.Name;
         List<Item> list2 = equipment.Runes
             .OrderByDescending(rune => rune.RuneProperties!.RuneKind)
             .ToList();
         equipment.Runes.Add(runestone);
         foreach (Item obj3 in list2)
         {
-            equipment.Name =
+            equipment.ProsaicName =
                 $"{obj3.RuneProperties!.Prefix} {equipment.Name}";
         }
     }

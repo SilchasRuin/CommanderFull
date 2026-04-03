@@ -198,7 +198,7 @@ public class CommanderArchetype
                                         Item basicBanner = Items.CreateNew(ItemName.Club);
                                         basicBanner.Traits.Add(MTraits.Banner);
                                         basicBanner.Traits.Add(Trait.EncounterEphemeral);
-                                        basicBanner.Name = "Simple Banner";
+                                        basicBanner.ProsaicName = "Simple Banner";
                                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                                         qEffect.Owner.Space.CenterTile.DropItem(basicBanner);
                                         self.AddQEffect(new QEffect
@@ -234,7 +234,7 @@ public class CommanderArchetype
                         Item basicBanner = Items.CreateNew(ItemName.Club);
                         basicBanner.Traits.Add(MTraits.Banner);
                         basicBanner.Traits.Add(Trait.EncounterEphemeral);
-                        basicBanner.Name = "Simple Banner";
+                        basicBanner.ProsaicName = "Simple Banner";
                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                         if (!self.CarriedItems.Any(item =>
                                 item.HasTrait(MTraits.Banner) && item.HasTrait(Trait.Weapon)) &&

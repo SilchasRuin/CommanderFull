@@ -306,7 +306,8 @@ public abstract partial class Commander
     internal static void LoadGenericFeats()
     {
         if (AllFeats.GetFeatByFeatName(FeatName.ShieldWarden) is not TrueFeat warden) return;
-        warden.WithAllowsForAdditionalClassTrait(MTraits.Commander);
+        warden.Traits.Add(MTraits.Commander);
+        if (warden.Prerequisites.Count == 0) return;
         warden.Prerequisites.RemoveAll(req =>
             req.Description.Contains("must have Shield Ally") || req.Description.Contains("must be a Fighter"));
         warden.WithPrerequisite(
@@ -1001,7 +1002,7 @@ public abstract partial class Commander
                                     new Commander.InBannerAuraRequirement().Satisfied(effect.Owner, creature)))
                         .WithActionCost(1).WithSoundEffect(SfxName.Drum)
                         .WithActionId(MActionIds.BannersInspiration)
-                        .WithEffectOnEachTarget((spell, caster, target, _) =>
+                        .WithEffectOnEachTarget(async (spell, caster, target, _) =>
                         {
                             if (target.FindQEffect(QEffectId.Stupefied) is { } stupefied)
                             {
@@ -1016,8 +1017,8 @@ public abstract partial class Commander
                             }
 
                             if (!target.HasEffect(QEffectId.Confused) && !target.HasEffect(QEffectId.Paralyzed))
-                                return Task.CompletedTask;
-                            CheckResult save = CommonSpellEffects.RollSavingThrow(target, spell, Defense.Will,
+                                return;
+                            CheckResult save = await CommonSpellEffects.RollSavingThrowAsync(target, spell, Defense.Will,
                                 Checks.LevelBasedDC(caster.Level));
                             if (save >= CheckResult.Success)
                             {
@@ -1027,7 +1028,6 @@ public abstract partial class Commander
                             }
 
                             target.AddQEffect(QEffect.ImmunityToTargeting(MActionIds.BannersInspiration));
-                            return Task.CompletedTask;
                         });
                     return new ActionPossibility(inspiration).WithPossibilityGroup("Abilities");
                 };
@@ -1240,7 +1240,7 @@ public abstract partial class Commander
                                                 TileQEffect? tileQEffect =
                                                     bannerTile.TileQEffects.FirstOrDefault(tQ =>
                                                         tQ.TileQEffectId == MTileQEffectIds.Banner);
-                                                CheckResult save = CommonSpellEffects.RollSavingThrow(
+                                                CheckResult save = await CommonSpellEffects.RollSavingThrowAsync(
                                                     combatAction.Owner, spell, Defense.Will,
                                                     caster.ClassDC(MTraits.Commander));
                                                 if (cr.Level > caster.Level) save.ImproveByOneStep();
@@ -1461,18 +1461,19 @@ public abstract partial class Commander
             "Your animal companion is stronger.", qf =>
             {
                 qf.Id = QEffectId.MatureAnimalCompanion;
-                qf.StartOfCombat = _ =>
+                qf.StartOfCombat = async _ =>
                 {
                     if (qf.Owner.HasFeat(MFeatNames.BattleHardenedCompanion) ||
                         qf.Owner.HasFeat(FeatName.MatureAnimalCompanionRanger) ||
                         qf.Owner.HasFeat(FeatName.MatureAnimalCompanionDruid) ||
-                        qf.Owner.HasFeat(FeatName.LoyalCompanion)) return Task.CompletedTask;
+                        qf.Owner.HasFeat(FeatName.LoyalCompanion)) return;
                     qf.Owner.RemoveAllQEffects(qf1 => qf1 == qf1.Owner.QEffects.FirstOrDefault(qff =>
                         (qff.ProvideMainAction?.Invoke(qff) as ActionPossibility)?.CombatAction.Name ==
                         "Act on your own"));
                     qf.Owner.RemoveAllQEffects(qf1 => qf1 == qf1.Owner.QEffects.FirstOrDefault(qff =>
                         (qff.ProvideMainAction?.Invoke(qff) as ActionPossibility)?.CombatAction.Name ==
                         "Command your animal companion"));
+                    await qf.Owner.Battle.GameLoop.StateCheck();
                     qf.Owner.AddQEffect(new QEffect()
                     {
                         ProvideMainAction = qfPointless =>
@@ -1537,7 +1538,6 @@ public abstract partial class Commander
                             }
                         }
                     });
-                    return Task.CompletedTask;
                 };
                 // qf.AfterYouTakeAction = (_, action) =>
                 // {

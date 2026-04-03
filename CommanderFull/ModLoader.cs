@@ -194,7 +194,9 @@ public class ModLoader
                     ProvideActionIntoPossibilitySection = (qf, possibility) =>
                         possibility.PossibilitySectionId == PossibilitySectionId.AttackManeuvers
                             ? new ActionPossibility(Commander.Reposition(qf.Owner))
-                            : null
+                            : null,
+                    Key = "RepositionGranter",
+                    Value = 0
                 });
             });
         }

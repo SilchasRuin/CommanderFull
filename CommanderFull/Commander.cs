@@ -453,7 +453,7 @@ public abstract partial class Commander
                                         Item basicBanner = Items.CreateNew(ItemName.Club);
                                         basicBanner.Traits.Add(MTraits.Banner);
                                         basicBanner.Traits.Add(Trait.EncounterEphemeral);
-                                        basicBanner.Name = "Simple Banner";
+                                        basicBanner.ProsaicName = "Simple Banner";
                                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                                         qEffect.Owner.Space.CenterTile.DropItem(basicBanner);
                                         self.AddQEffect(new QEffect
@@ -489,7 +489,7 @@ public abstract partial class Commander
                         Item basicBanner = Items.CreateNew(ItemName.Club);
                         basicBanner.Traits.Add(MTraits.Banner);
                         basicBanner.Traits.Add(Trait.EncounterEphemeral);
-                        basicBanner.Name = "Simple Banner";
+                        basicBanner.ProsaicName = "Simple Banner";
                         basicBanner.Illustration = MIllustrations.SimpleBanner;
                         if (!self.CarriedItems.Any(item =>
                                 item.HasTrait(MTraits.Banner) && item.HasTrait(Trait.Weapon)) &&
@@ -846,9 +846,9 @@ public abstract partial class Commander
                             IEnumerable<Tile> tiles = caster.Battle.Map.AllTiles.Where(tile =>
                                 tile.IsTrulyGenuinelyFreeTo(target) && tile.DistanceTo(target.Occupies) <= 2 &&
                                 tile.IsAdjacentTo(caster.Occupies));
-                            Tile moveTo = (await caster.Battle.AskToChooseATile(caster, tiles,
+                            Tile moveTo = (await caster.Battle.AskToChooseATile(caster ,tiles,
                                 MIllustrations.Reposition,
-                                "Choose where to reposition " + target.Name + ".", "", false, false))!;
+                                "Choose where to reposition " + target.Name + ".", "", false, false, target))!;
                             await target.MoveTo(moveTo, null,
                                 new MovementStyle()
                                 {
@@ -871,7 +871,7 @@ public abstract partial class Commander
                                 tile.IsAdjacentTo(caster.Occupies));
                             Tile moveTo2 = (await caster.Battle.AskToChooseATile(caster, tile2,
                                 MIllustrations.Reposition,
-                                "Choose where to reposition " + target.Name + ".", "", false, false))!;
+                                "Choose where to reposition " + target.Name + ".", "", false, false, target))!;
                             await target.MoveTo(moveTo2, null,
                                 new MovementStyle()
                                 {
@@ -910,7 +910,7 @@ public abstract partial class Commander
                                     tile.IsAdjacentTo(target.Occupies));
                                 Tile moveTo4 = (await target.Battle.AskToChooseATile(caster, tiles2,
                                     MIllustrations.Reposition,
-                                    "Choose where to reposition " + caster.Name + ".", "", false, false))!;
+                                    "Choose where to reposition " + caster.Name + ".", "", false, false, target))!;
                                 await caster.MoveTo(moveTo4, null,
                                     new MovementStyle()
                                     {
