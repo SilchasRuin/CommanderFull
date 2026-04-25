@@ -204,10 +204,10 @@ public abstract partial class Commander
                 "You are able to rapidly discern relevant details about your opponents in the heat of combat.",
                 $"When you use Combat Assessment against a target that you or an ally has targeted with a Strike or spell since the start of your last turn, you get a +2 circumstance bonus to the {UseCreatedTooltip("Recall Weakness")} check (+4 if the Strike from Combat Assessment is a critical hit).",
                 [MTraits.Commander]);
-            if (Dawnni)
-                DawnniRequired.ObservationalAnalysisLogic(observationalAnalysis);
             if (LoreWeak)
                 AnaseRequired.ObservationalAnalysisLogic(observationalAnalysis);
+            else if (Dawnni)
+                DawnniRequired.ObservationalAnalysisLogic(observationalAnalysis);
             yield return observationalAnalysis;
         }
 
