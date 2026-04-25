@@ -32,8 +32,7 @@ public class DawnniRequired
                 strike.StrikeModifiers.OnEachTarget +=
                     (Func<Creature, Creature, CheckResult, Task>)(async (caster, target, checkResult) =>
                     {
-                        target.AddQEffect(QEffect.ImmunityToTargeting(FeatRecallWeakness.CombatAssessmentActionID,
-                            caster));
+                        target.AddQEffect(QEffect.ImmunityToTargeting(FeatRecallWeakness.CombatAssessmentActionID));
                         bool observed = target.FindQEffect(ModData.MQEffectIds.Observed)?.Source == caster;
                         QEffect crit = new(
                             (observed ? "Observational Analysis" : "Combat Assessment") + " (Critical Success)",
@@ -104,7 +103,7 @@ public class DawnniRequired
                     {
                         qfTech.YouAreTargeted = (_, action) =>
                         {
-                            if (action.SpellInformation == null || !action.HasTrait(Trait.Strike))
+                            if (action.SpellInformation == null && !action.HasTrait(Trait.Strike))
                                 return Task.CompletedTask;
                             if (action.Owner == self ||
                                 self.Battle.AllCreatures.Any(cr =>

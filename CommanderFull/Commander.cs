@@ -31,6 +31,7 @@ using Dawnsbury.Display.Text;
 using Dawnsbury.Modding;
 using static CommanderFull.ModData;
 using Color = Microsoft.Xna.Framework.Color;
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
 
 namespace CommanderFull;
 
@@ -307,10 +308,11 @@ public abstract partial class Commander
                 {
                     cr.AddQEffect(new QEffect("Warfare Expertise",
                         "As long as at least one enemy is visible at the start of an encounter, you can roll Warfare Lore in place of Perception for initiative. " +
-                        "{i}Special{/i} If you have DawnniEx installed, you use Warfare Lore for all " +
-                        CreateTooltips("Recall Weakness", "{b}Recall Weakness {icon:Action}{/b}"+"\n{i}Skill{/i}\n\n" + (Dawnni ? DawnniRequired.RecallWeaknessDescription(cr) : "")) +
+                        "{i}Special{/i} If you have DawnniEx or Lores and Weaknesses installed, you use Warfare Lore for all " +
+                        CreateTooltips("Recall Weakness", "{b}Recall Weakness {icon:Action}{/b}"+"\n{i}Skill{/i}\n\n" + (LoreWeak ? AnaseRequired.RecallWeaknessDescription() : Dawnni ? DawnniRequired.RecallWeaknessDescription(cr) : "")) +
                         " actions if your Warfare Lore is better than the original skill check.")
                     {
+                        Id = MQEffectIds.WarfareExpertise,
                         StartOfCombat = _ =>
                         {
                             if (cr.Battle.AllCreatures.Any(enemy => enemy.EnemyOf(cr) && cr.CanSee(enemy)))
@@ -318,22 +320,34 @@ public abstract partial class Commander
                                     { OfferAlternateSkillForInitiative = _ => WarfareLore });
                             return Task.CompletedTask;
                         },
-                        YouBeginAction = (_, action) =>
+                        YouBeginAction = async (_, action) =>
                         {
-                            if (action is
-                                {
-                                    Name: "Recall Weakness",
-                                    ActiveRollSpecification.TaggedDetermineBonus.InvolvedSkill: not null
-                                })
-                            {
-                                Skill original = action.ActiveRollSpecification.TaggedDetermineBonus.InvolvedSkill
-                                    .Value;
-                                action.WithActiveRollSpecification(new ActiveRollSpecification(
-                                    TaggedChecks.SkillCheck(WarfareLore, original),
-                                    action.ActiveRollSpecification.TaggedDetermineDC));
-                            }
+                            if (!ModManager.TryParse("RecallWeaknessActionID", out ActionId recall))
+                                return;
+                            if (!action.Owner.HasEffect(MQEffectIds.WarfareExpertise))
+                                return;
+                            if (action.ActiveRollSpecification == null) return;
+                            if (action.ActionId != recall) return;
+                            action.WithActiveRollSpecification(new ActiveRollSpecification(
+                                TaggedChecks.BestRoll(TaggedChecks.SkillCheck(WarfareLore).WithExtraBonus((_, _, _) => new Bonus(2, BonusType.Untyped, "Unspecific lore")), action.ActiveRollSpecification.TaggedDetermineBonus),
+                                action.ActiveRollSpecification.TaggedDetermineDC));
 
-                            return Task.CompletedTask;
+                            // if (action is
+                            //     {
+                            //         ActiveRollSpecification.TaggedDetermineBonus.InvolvedSkill: not null
+                            //     })
+                            // {
+                            //     action.Owner.Battle.Log("Not null");
+                            //     if (action.ActionId == recall)
+                            //     {
+                            //         Skill original = action.ActiveRollSpecification.TaggedDetermineBonus.InvolvedSkill
+                            //             .Value;
+                            //         action.WithActiveRollSpecification(new ActiveRollSpecification(
+                            //             TaggedChecks.SkillCheck(WarfareLore, original),
+                            //             action.ActiveRollSpecification.TaggedDetermineDC));
+                            //         action.Owner.Battle.Log(original.ToStringOrTechnical());
+                            //     }
+                            // }
                         }
                     });
                 }

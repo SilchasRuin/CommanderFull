@@ -226,10 +226,17 @@ public class ModLoader
                                values.GetProficiency(ExplorationActivities.ModData.Traits.WarfareLore) >=
                                Proficiency.Trained), "You must be trained in Deception.");
             }
-
             if (Dawnni)
             {
                 DawnniRequired.ModCombatAssessment();
+            }
+
+            if (!LoreWeak) return;
+            if (ModManager.TryParse("CombatAssessment", out FeatName combat) && AllFeats.All.FirstOrDefault(ft => ft.FeatName == combat) is { } combatAssessment)
+            {
+                combatAssessment.Traits.Add(MTraits.Commander);
+                combatAssessment.Prerequisites.RemoveAll(pr => pr.Description.Contains("Fighter"));
+                combatAssessment.Prerequisites.Add(new ClassPrerequisite([Trait.Fighter, MTraits.Commander]));
             }
         };
         //shielded recovery
@@ -253,6 +260,18 @@ public class ModLoader
                     : Usability.Usable;
             });
             action.Description = action.Description.Insert(action.Description.IndexOf('.'), " or be wielding a shield");
+        });
+        ModManager.RegisterActionOnEachActionPossibility(action =>
+        {
+            if (!ModManager.TryParse("RecallWeaknessActionID", out ActionId recall))
+                return;
+            if (!action.Owner.HasEffect(MQEffectIds.WarfareExpertise))
+                return;
+            if (action.ActiveRollSpecification == null) return;
+            if (action.ActionId != recall) return;
+            action.WithActiveRollSpecification(new ActiveRollSpecification(
+                TaggedChecks.BestRoll(TaggedChecks.SkillCheck(Commander.WarfareLore).WithExtraBonus((_, _, _) => new Bonus(2, BonusType.Untyped, "Unspecific lore")), action.ActiveRollSpecification.TaggedDetermineBonus),
+                action.ActiveRollSpecification.TaggedDetermineDC));
         });
         //stat block modification
         int abilitiesIndex =

@@ -16,6 +16,9 @@
       <Reference Include="Dawnsbury.Mods.DawnniExpanded">
         <HintPath>D:\SteamLibrary\steamapps\workshop\content\2693730\3163146733\CustomMods\Dawnsbury.Mods.DawnniExpanded.dll</HintPath>
       </Reference>
+      <Reference Include="Dawnsbury.Mods.LoresAndWeaknesses">
+        <HintPath>D:\SteamLibrary\steamapps\workshop\content\2693730\3710730920\CustomModsV3\Dawnsbury.Mods.LoresAndWeaknesses.dll</HintPath>
+      </Reference>
       <Reference Include="ExplorationActivities">
         <HintPath>D:\SteamLibrary\steamapps\common\Dawnsbury Days\CustomMods\ExplorationActivities.dll</HintPath>
       </Reference>

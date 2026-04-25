@@ -4,6 +4,7 @@ using Dawnsbury.Campaign.Encounters.Tutorial;
 using Dawnsbury.Campaign.Path;
 using Dawnsbury.Core;
 using Dawnsbury.Core.Animations;
+using Dawnsbury.Core.Animations.Movement;
 using Dawnsbury.Core.CharacterBuilder;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb;
@@ -107,7 +108,7 @@ public abstract partial class Commander
             }).WithPrerequisite(sheet =>
                     sheet.Tags.TryGetValue("PreparedTactics", out var value) && value is not null && (int)value >= 3,
                 "You must be able to select at least 3 tactics.");
-        if (ModManager.TryParse("DawnniEx", out Trait _))
+        if (Dawnni && !LoreWeak)
         {
             TrueFeat combatAssessment = new(MFeatNames.CombatAssessment, 1,
                 "You make a telegraphed attack to learn about your foe.",
@@ -116,7 +117,6 @@ public abstract partial class Commander
             DawnniRequired.CombatAssessmentLogic(combatAssessment);
             yield return combatAssessment;
         }
-
         TrueFeat armoredRegiment = new(MFeatNames.ArmorRegiment, 1,
             "You've trained for grueling marches in full battle kit.",
             "You ignore the reduction to your Speed from any armor you wear and you can rest normally while wearing armor of any type.",
@@ -162,7 +162,7 @@ public abstract partial class Commander
         SetUpStrikeLogic(setupStrike);
         yield return setupStrike;
 
-        if (Dawnni)
+        if (Dawnni || LoreWeak)
         {
             TrueFeat rapidAssessment = new(MFeatNames.RapidAssessment, 2, "You quickly evaluate your enemies.",
                 $"Attempt a check to {UseCreatedTooltip("Recall Weakness")} against one creature you are observing.",
@@ -198,13 +198,16 @@ public abstract partial class Commander
         BannersInspirationLogic(bannerInspire);
         yield return bannerInspire;
 
-        if (Dawnni)
+        if (Dawnni || LoreWeak)
         {
             TrueFeat observationalAnalysis = new(MFeatNames.ObservationalAnalysis, 4,
                 "You are able to rapidly discern relevant details about your opponents in the heat of combat.",
                 $"When you use Combat Assessment against a target that you or an ally has targeted with a Strike or spell since the start of your last turn, you get a +2 circumstance bonus to the {UseCreatedTooltip("Recall Weakness")} check (+4 if the Strike from Combat Assessment is a critical hit).",
                 [MTraits.Commander]);
-            DawnniRequired.ObservationalAnalysisLogic(observationalAnalysis);
+            if (Dawnni)
+                DawnniRequired.ObservationalAnalysisLogic(observationalAnalysis);
+            if (LoreWeak)
+                AnaseRequired.ObservationalAnalysisLogic(observationalAnalysis);
             yield return observationalAnalysis;
         }
 
@@ -288,7 +291,7 @@ public abstract partial class Commander
         RallyingBannerLogic(rallyingBanner);
         yield return rallyingBanner;
 
-        if (Dawnni)
+        if (Dawnni || LoreWeak)
         {
             yield return new TrueFeat(MFeatNames.UnrivaledAnalysis, 8,
                 "Your experience allows you to derive even more information about your opponents from a mere glance.",
@@ -738,8 +741,10 @@ public abstract partial class Commander
                             {
                                 Tile selfStart = self.Occupies;
                                 Tile allyStart = ally.Occupies;
-                                await self.SingleTileMove(allyStart, null);
-                                await ally.SingleTileMove(selfStart, null);
+                                await self.SingleTileMove(allyStart, null, new MovementStyle(){Shifting = true});
+                                await ally.SingleTileMove(selfStart, null, new MovementStyle(){Shifting = true});
+                                await self.SingleTileMove(allyStart, null, new MovementStyle(){Shifting = true});
+                                await ally.SingleTileMove(selfStart, null, new MovementStyle(){Shifting = true});
                                 action.ChosenTargets = ChosenTargets.CreateSingleTarget(self);
                                 self.Overhead("Defensive Swap", Color.Black, self + " uses {b}Defensive Swap{/b}",
                                     "Defensive Swap {icon:Reaction}", qf.Description,
@@ -779,8 +784,10 @@ public abstract partial class Commander
                                 {
                                     Tile selfStart = self.Occupies;
                                     Tile allyStart = friend.Occupies;
-                                    await self.SingleTileMove(allyStart, null);
-                                    await friend.SingleTileMove(selfStart, null);
+                                    await self.SingleTileMove(allyStart, null, new MovementStyle(){Shifting = true});
+                                    await friend.SingleTileMove(selfStart, null, new MovementStyle(){Shifting = true});
+                                    await self.SingleTileMove(allyStart, null, new MovementStyle(){Shifting = true});
+                                    await friend.SingleTileMove(selfStart, null, new MovementStyle(){Shifting = true});
                                     action.ChosenTargets = ChosenTargets.CreateSingleTarget(friend);
                                     self.Overhead("Defensive Swap", Color.Black, self + " uses {b}Defensive Swap{/b}",
                                         "Defensive Swap {icon:Reaction}", qf.Description,

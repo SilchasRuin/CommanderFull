@@ -16,6 +16,7 @@ namespace CommanderFull;
 public abstract class ModData
 {
     public static bool Dawnni = ModManager.TryParse("DawnniEx", out Trait _);
+    public static bool LoreWeak = ModManager.TryParse("LoresAndWeaknesses.Lore", out Trait _);
     public abstract class MTraits
     {
         public static readonly Trait Commander = ModManager.RegisterTrait("Commander", new TraitProperties("Commander", true) { IsClassTrait = true });
@@ -46,7 +47,7 @@ public abstract class ModData
         public static readonly FeatName CommandersCompanion = ModManager.RegisterFeatName("FC_CommandersCompanion", "Commander's Companion");
         public static readonly FeatName DeceptiveTactics = ModManager.RegisterFeatName("FC_DeceptiveTactics", "Deceptive Tactics");
         public static readonly FeatName EfficientPreparation = ModManager.RegisterFeatName("FC_EfficientPreparation", "Efficient Preparation");
-        public static readonly FeatName CombatAssessment = ModManager.RegisterFeatName("FC_CombatAssessment", "Combat Assessment");
+        public static readonly FeatName CombatAssessment = ModManager.TryParse("CombatAssessment", out FeatName cA) ? cA : ModManager.RegisterFeatName("CombatAssessment", "Combat Assessment");
         public static readonly FeatName ArmorRegiment = ModManager.RegisterFeatName("FC_ArmorRegiment", "Armor Regiment Training");
         public static readonly FeatName PlantBanner = ModManager.RegisterFeatName("FC_PlantBanner", "Plant Banner");
         public static readonly FeatName AdaptiveStratagem = ModManager.RegisterFeatName("FC_AdaptiveStratagem", "Adaptive Stratagem");
@@ -123,6 +124,7 @@ public abstract class ModData
         public static QEffectId AudibleTactics { get; } = ModManager.RegisterEnumMember<QEffectId>("AudibleTactics");
         public static QEffectId VisualTactics { get; } = ModManager.RegisterEnumMember<QEffectId>("VisualTactics");
         public static QEffectId MagicalBanner { get; } =  ModManager.RegisterEnumMember<QEffectId>("MagicalBanner");
+        public static QEffectId WarfareExpertise { get; } = ModManager.RegisterEnumMember<QEffectId>("WarfareExpertise");
         
     }
     public abstract class MTileQEffectIds
