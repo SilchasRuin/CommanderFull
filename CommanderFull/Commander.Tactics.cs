@@ -19,7 +19,6 @@ using Dawnsbury.Core.Mechanics.Targeting.Targets;
 using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Core.Tiles;
-using Dawnsbury.Modding;
 using static CommanderFull.ModData;
 
 namespace CommanderFull;
@@ -28,92 +27,92 @@ public abstract partial class Commander
 {
     public static IEnumerable<Feat> LoadTactics()
     {
-        yield return new Commander.ActionFeat(MFeatNames.GatherToMe,
+        yield return new ActionFeat(MFeatNames.GatherToMe,
             "You signal your team to move into position together.",
             "Signal all squadmates; each can immediately Stride as a reaction, though each must end their movement inside your banner’s aura, or as close to your banner's aura as their movement Speed allows.",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.MobilityTactic]).WithActionCost(1).WithIllustration(MIllustrations.GatherToMe);
-        yield return new Commander.ActionFeat(MFeatNames.DefensiveRetreat, "You call for a careful retreat.",
+        yield return new ActionFeat(MFeatNames.DefensiveRetreat, "You call for a careful retreat.",
             "Signal all squadmates within the aura of your commander's banner; each can immediately Step up to three times as a free action. Each Step must take them farther away from at least one hostile creature they are observing and can only take them closer to a hostile creature if doing so is the only way for them to move toward safety.",
             [
                 MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
                 MTraits.MobilityTactic
             ]).WithActionCost(2).WithIllustration(MIllustrations.Retreat);
-        yield return new Commander.ActionFeat(MFeatNames.NavalTraining,
+        yield return new ActionFeat(MFeatNames.NavalTraining,
             "Your instructions make it easier for you and your allies to swim through dangerous waters.",
             "Signal all squadmates; until the end of your next turn, each squadmate gains a swim Speed.",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.MobilityTactic]).WithActionCost(1).WithIllustration(IllustrationName.WaterWalk);
-        yield return new Commander.ActionFeat(MFeatNames.PassageOfLines,
+        yield return new ActionFeat(MFeatNames.PassageOfLines,
             "You command your allies to regroup, allowing endangered units to fall back while rested units press the advantage.",
             "Signal all squadmates within the aura of your commander's banner; each can swap positions with another willing ally adjacent to them.",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.MobilityTactic]).WithActionCost(1).WithIllustration(MIllustrations.PassageOfLines);
-        yield return new Commander.ActionFeat(MFeatNames.ProtectiveScreen,
+        yield return new ActionFeat(MFeatNames.ProtectiveScreen,
             "You've trained your allies in a technique designed to protect war mages.",
             "Signal one squadmate; as a reaction, that squadmate Strides directly toward any other squadmate who is within the aura of your banner. If the first squadmate ends their movement adjacent to that squadmate, that squadmate does not trigger reactions when casting spells or making ranged attacks until the end of their next turn or until they are no longer adjacent to the first squadmate, whichever comes first.",
             [
                 MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
                 MTraits.MobilityTactic
             ]).WithActionCost(1).WithIllustration(MIllustrations.ProtectiveScreen);
-        yield return new Commander.ActionFeat(MFeatNames.PincerAttack,
+        yield return new ActionFeat(MFeatNames.PincerAttack,
             "You signal an aggressive formation designed to exploit enemies' vulnerabilities.",
             "Signal all squadmates affected by your commander's banner; each can Step as a reaction. If any of your allies end this movement adjacent to an opponent, that opponent is off-guard to melee attacks from you and all other squadmates who responded to Pincer Attack until the start of your next turn.",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(1).WithIllustration(MIllustrations.PincerAttack);
-        yield return new Commander.ActionFeat(MFeatNames.StrikeHard, "You command an ally to attack.",
+        yield return new ActionFeat(MFeatNames.StrikeHard, "You command an ally to attack.",
             "Choose a squadmate who can see or hear your signal. That ally immediately attempts a Strike as a reaction.",
             [
                 MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
                 MTraits.OffensiveTactic
             ]).WithActionCost(2).WithIllustration(MIllustrations.StrikeHard);
-        yield return new Commander.ActionFeat(MFeatNames.CoordinatingManeuvers,
+        yield return new ActionFeat(MFeatNames.CoordinatingManeuvers,
             "Your team works to slip enemies into a disadvantageous position.",
             $"Signal one squadmate within the aura of your banner; that squadmate can immediately Step as a free action. If they end this movement next to an opponent, they can attempt to {UseCreatedTooltip("Reposition")} that target as a reaction.",
             [
                 MTraits.Tactic, MTraits.Brandish, MTraits.BasicTactic,
                 MTraits.OffensiveTactic
             ]).WithActionCost(1).WithIllustration(MIllustrations.CoordinatingManeuvers);
-        yield return new Commander.ActionFeat(MFeatNames.DoubleTeam,
+        yield return new ActionFeat(MFeatNames.DoubleTeam,
             "Your team works together to set an enemy up for a vicious attack.",
             $"Signal one squadmate who has an opponent within their reach. That ally can Shove or {UseCreatedTooltip("Reposition")} an opponent as a free action. If their maneuver is successful and the target ends their movement adjacent to a different squadmate, the second squadmate can attempt a melee Strike against that target as a reaction.",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(2).WithIllustration(MIllustrations.DoubleTeam);
-        yield return new Commander.ActionFeat(MFeatNames.EndIt,
+        yield return new ActionFeat(MFeatNames.EndIt,
             "At your proclamation that victory is already at hand, your allies march forward with an authoritative stomp, scattering your enemies in terror.",
             "If you and your allies outnumber all enemies on the battlefield, and you or a squadmate have reduced an enemy to 0 Hit Points since the start of your last turn, you may signal all squadmates within the aura of your banner; you and each ally can Step as a free action directly toward a hostile creature. Any hostile creatures within 10 feet of a squadmate after this movement must attempt a Will save against your class DC; on a failure they become fleeing for 1 round, and on a critical failure they become fleeing for 1 round and frightened 2. This is an emotion, fear, and mental effect.",
             [
                 MTraits.Tactic, MTraits.Brandish, Trait.Incapacitation, MTraits.BasicTactic,
                 MTraits.OffensiveTactic
             ]).WithActionCost(2).WithIllustration(MIllustrations.EndIt);
-        yield return new Commander.ActionFeat(MFeatNames.Reload,
+        yield return new ActionFeat(MFeatNames.Reload,
             "Your drill instruction kicks in, and your allies rapidly reload their weapons to prepare for the next volley.",
             "Signal all squadmates; each can immediately Interact to reload as a reaction.",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(1).WithIllustration(MIllustrations.Reload);
-        yield return new Commander.ActionFeat(MFeatNames.ShieldsUp, "You signal your allies to ready their defenses.",
+        yield return new ActionFeat(MFeatNames.ShieldsUp, "You signal your allies to ready their defenses.",
             "Signal all squadmates within the aura of your commander’s banner; each can immediately Raise a Shield as a reaction. Squadmates who have a parry action (whether from a Parry weapon or a Feat such as Dueling Parry or Twin Parry) may use that instead.\n\n{b}Special{/b} If one of your squadmates knows or has prepared the shield cantrip, they can cast it as a reaction instead of taking the actions normally granted by this tactic.",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(1).WithIllustration(MIllustrations.ShieldsUp);
-        yield return new Commander.ActionFeat(MFeatNames.TacticalTakedown,
+        yield return new ActionFeat(MFeatNames.TacticalTakedown,
             "You direct a coordinated maneuver that sends an enemy tumbling down.",
             "Signal up to two squadmates within the aura of your commander’s banner. Each of those allies can Stride up to half their Speed as a reaction. If they both end this movement adjacent to an enemy, that enemy must succeed at a Reflex save against your class DC or fall prone.\n",
             [MTraits.Tactic, MTraits.BasicTactic, MTraits.OffensiveTactic]).WithActionCost(2).WithIllustration(MIllustrations.TacticalTakedown);
-        yield return new Commander.ActionFeat(MFeatNames.DemoralizingCharge,
+        yield return new ActionFeat(MFeatNames.DemoralizingCharge,
             "Your team’s coordinated assault strikes fear into your enemies’ hearts.",
             "Signal up to two squadmates within the aura of your commander’s banner; as a free action, those squadmates can immediately Stride toward an enemy they are observing. If they end this movement adjacent to an enemy, they can attempt to Strike that enemy as a reaction. For each of these Strikes that are successful, the target enemy must succeed at a Will save against your class DC or become frightened 1 (frightened 2 on a critical failure); this is an emotion, fear, and mental effect. If both Strikes target the same enemy, that enemy attempts the save only once after the final attack and takes a –1 circumstance penalty to their Will save to resist this effect (this penalty increases to –2 if both Strikes are successful or to –3 if both Strikes are successful and either is a critical hit).",
             [MTraits.Tactic, MTraits.ExpertTactic, MTraits.Brandish]).WithActionCost(2).WithIllustration(MIllustrations.DemoralizingCharge);
-        yield return new Commander.ActionFeat(MFeatNames.BuckleCutBlitz,
+        yield return new ActionFeat(MFeatNames.BuckleCutBlitz,
             "Your squad dashes past enemies, slicing their boot laces and breaking their belt buckles.",
             "Signal up to two squadmates within the aura of your commander’s banner; these squadmates can Stride up to their Speed as a reaction. Each enemy they are adjacent to at any point during this movement must attempt a Reflex save against your class DC or become clumsy 1 for 1 round (clumsy 2 on a critical failure).",
             [MTraits.Tactic, MTraits.ExpertTactic, MTraits.Brandish]).WithActionCost(2).WithIllustration(MIllustrations.BuckleCutBlitz);
-        yield return new Commander.ActionFeat(MFeatNames.StupefyingRaid,
+        yield return new ActionFeat(MFeatNames.StupefyingRaid,
             "Your team dashes about in a series of maneuvers that leave the enemy befuddled.",
             "Signal up to two squadmates within the aura of your commander’s banner; these squadmates can Stride up to their Speed as a reaction. Each enemy they are adjacent to at any point during this movement must attempt a Will save against your class DC or become stupefied 1 for 1 round (stupefied 2 on a critical failure); this is a mental effect.",
             [MTraits.Tactic, MTraits.ExpertTactic, MTraits.Brandish]).WithActionCost(2).WithIllustration(MIllustrations.StupefyingRaid);
-        yield return new Commander.ActionFeat(MFeatNames.SlipAndSizzle,
+        yield return new ActionFeat(MFeatNames.SlipAndSizzle,
             "Your team executes a brutal technique designed to knock down an opponent and blast them with magical devastation.",
             "Signal up to two squadmates within the aura of your commander’s banner; one of these squadmates must be adjacent to an opponent and the other must be capable of casting a spell that deals damage. The first squadmate can attempt to Trip the adjacent opponent as a reaction. If this Trip is successful, the second squadmate can cast a ranged spell that deals damage and takes 2 or fewer actions to cast. This spell is cast as a reaction and must either target the tripped opponent or include the tripped opponent in the spell’s area.\n\nIf the second squadmate cast a spell using slots or Focus Points as part of this tactic, they are slowed 1 until the end of their next turn and do not gain a reaction when they regain actions at the start of their next turn." +
             "\n{b}Note{/b} Spells with variants, for example: Magic Missile or Scorching Ray, cannot be cast at this time.",
             [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(2).WithIllustration(MIllustrations.SlipAndSizzle);
-        yield return new Commander.ActionFeat(MFeatNames.AlleyOop,
+        yield return new ActionFeat(MFeatNames.AlleyOop,
             "Your team excels at sharing resources and delivering them exactly where they need to be.",
             "Signal a squadmate within the aura of your banner who is holding or wearing a consumable that can be activated as a single action (if the target is wearing a consumable, they need a free hand to toss it). That squadmate can toss their consumable to any other squadmate within the aura of your banner as a free action, and the receiving squadmate can catch and activate the consumable as a reaction. If the receiving squadmate chooses not to catch the consumable or if they don’t have a free hand to catch it with, it lands on the ground in their space.",
             [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(1).WithIllustration(MIllustrations.AlleyOop);
-        yield return new Commander.ActionFeat(MFeatNames.TakeTheHighGround,
+        yield return new ActionFeat(MFeatNames.TakeTheHighGround,
                 "Your ally leaps to secure the high ground with a little help from the squad.",
                 "Signal a squadmate within the aura of your commander’s banner; as a free action, that squadmate can Stride directly toward any other squadmate you are both observing. If the first squadmate ends this movement adjacent to another squadmate, the first squadmate can immediately Leap up to 25 feet as a reaction, boosted by the other squadmate. This distance increases to 40 feet if you have legendary proficiency in Warfare Lore.",
                 [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(1).WithIllustration(MIllustrations.TakeTheHighGround);
@@ -300,7 +299,7 @@ public abstract partial class Commander
         CombatAction tactic = new CombatAction(owner, MIllustrations.GatherToMe, "Gather to Me!",
                 [MTraits.Tactic, MTraits.Commander, Trait.Basic],
                 "Signal all squadmates; each can immediately Stride as a reaction, though each must end their movement inside your banner’s aura or as close to your banner's aura as their movement Speed allows.",
-                squadmates.Any(cr => new Commander.ReactionRequirement().Satisfied(owner, cr))
+                squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr))
                     ? AllSquadmateTarget(owner)
                     : Target.Uncastable("There must be at least one squadmate who can take a reaction."))
             .WithActionCost(1)
@@ -315,7 +314,7 @@ public abstract partial class Commander
                 bool lostReaction = false;
                 bool animalReact = false;
                 if (bannerHolder != null && targets.ChosenCreatures.Contains(bannerHolder) &&
-                    new Commander.TacticResponseRequirement().Satisfied(caster, bannerHolder) == Usability.Usable && CanTakeReaction(useDrilledReactions, bannerHolder, drilledTargets, caster))
+                    new TacticResponseRequirement().Satisfied(caster, bannerHolder) == Usability.Usable && CanTakeReaction(useDrilledReactions, bannerHolder, drilledTargets, caster))
                 {
                     if (useDrilledReactions && IsDrilledTarget(drilledTargets, bannerHolder))
                     {
@@ -354,7 +353,7 @@ public abstract partial class Commander
                     bool usedDrill2 = false;
                     bool lostReaction2 = false;
                     bool animalReact2 = false;
-                    if (new Commander.TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable ||
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable ||
                         !CanTakeReaction(useDrilledReactions, target, drilledTargets, caster))
                     {
                         continue;
@@ -379,6 +378,7 @@ public abstract partial class Commander
                     [
                         new CancelOption(true),
                     ];
+                    target.RegeneratePossibilities();
                     CombatAction? moveAction = (target.Possibilities
                             .Filter(ap =>
                             {
@@ -469,7 +469,7 @@ public abstract partial class Commander
                 [MTraits.Tactic, MTraits.Commander, Trait.Basic],
                 "Signal all squadmates within the aura of your banner; each can immediately Step up to three times as a free action. Each Step must take them farther away from at least one hostile creature they are observing and can only take them closer to a hostile creature if doing so is the only way for them to move toward safety.",
                 squadmates.Any(cr =>
-                    new Commander.BrandishRequirement().Satisfied(owner, cr) == Usability.Usable && possibles.Count > 0)
+                    new BrandishRequirement().Satisfied(owner, cr) == Usability.Usable && possibles.Count > 0)
                     ? AllSquadmateInBannerTarget(owner)
                     : Target.Uncastable("You must be holding a banner and be observing at least one hostile creature."))
             .WithActionCost(2)
@@ -480,8 +480,8 @@ public abstract partial class Commander
                 {
                     List<Creature> enemies = caster.Battle.AllCreatures
                         .Where(cr => cr.EnemyOf(target) && target.CanSee(cr)).ToList();
-                    if (new Commander.TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable ||
-                        new Commander.InBannerAuraRequirement().Satisfied(owner, target) != Usability.Usable || target == caster)
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable ||
+                        new InBannerAuraRequirement().Satisfied(owner, target) != Usability.Usable || target == caster)
                     {
                         continue;
                     }
@@ -491,6 +491,7 @@ public abstract partial class Commander
                         [
                             new CancelOption(true),
                         ];
+                        target.RegeneratePossibilities();
                         CombatAction? moveAction = (target.Possibilities
                                 .Filter(ap =>
                                 {
@@ -640,10 +641,10 @@ public abstract partial class Commander
                 "Signal one squadmate; as a reaction, that squadmate Strides directly toward any other squadmate who is within the aura of your banner. If the first squadmate ends their movement adjacent to that squadmate, that squadmate does not trigger reactions when casting spells or making ranged attacks until the end of their next turn or until they are no longer adjacent to the first squadmate, whichever comes first.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new Commander.BrandishRequirement(),
+                        new SquadmateTargetRequirement(), new BrandishRequirement(),
                         new FriendCreatureTargetingRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                        new Commander.ReactionRequirement()
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                        new ReactionRequirement()
                     ],
                     (_, _, _) => -2.14748365E+09f).WithAdditionalConditionOnTargetCreature((_, target) =>
                     CommonCombatActions.StepByStepStride(target).WithActionCost(0).CanBeginToUse(target)
@@ -658,7 +659,7 @@ public abstract partial class Commander
                         [Trait.Basic, Trait.DoNotShowInCombatLog, Trait.DoNotShowOverheadOfActionName],
                         "Stride towards an ally, adds a buff to that ally if end adjacent.",
                         Target.RangedFriend(target.Speed).WithAdditionalConditionOnTargetCreature((self, ally) =>
-                            new Commander.InBannerAuraRequirement().Satisfied(caster, ally) && IsSquadmate(caster, ally) &&
+                            new InBannerAuraRequirement().Satisfied(caster, ally) && IsSquadmate(caster, ally) &&
                             self != ally
                                 ? Usability.Usable
                                 : Usability.NotUsableOnThisCreature(
@@ -693,6 +694,7 @@ public abstract partial class Commander
                     caster.AddQEffect(DrilledReactionsExpended(caster));
                     usedDrill = true;
                 }
+
                 if (!useDrilledReactions && !target.HasEffect(MQEffectIds.AnimalReaction))
                 {
                     target.Actions.UseUpReaction();
@@ -703,6 +705,7 @@ public abstract partial class Commander
                     target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
                     animalReact = true;
                 }
+
                 List<Option> options = [new CancelOption(true)];
                 GameLoop.AddDirectUsageOnCreatureOptions(screenStride, options);
                 Option protStride = (await target.Battle.SendRequest(new AdvancedRequest(target,
@@ -740,7 +743,7 @@ public abstract partial class Commander
         CombatAction pincerAttack = new CombatAction(owner, MIllustrations.PincerAttack,
                 "Pincer Attack", [MTraits.Commander, MTraits.Tactic],
                 "Signal all squadmates; each can Step as a reaction. If any of your allies end this movement adjacent to an opponent, that opponent is off-guard to melee attacks from you and all other squadmates who responded to Pincer Attack until the start of your next turn.",
-                squadmates.Any(cr => new Commander.ReactionRequirement().Satisfied(owner, cr))
+                squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr))
                     ? AllSquadmateTarget(owner)
                     : Target.Uncastable("There must be at least one squadmate who can take a reaction."))
             .WithActionCost(1)
@@ -752,7 +755,7 @@ public abstract partial class Commander
                 foreach (Creature target in targets.ChosenCreatures)
                 {
                     bool useDrilledReactions = UseDrilledReactions(caster);
-                    if (new Commander.TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable || !CanTakeReaction(useDrilledReactions, target, drilledTargets, caster))
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable || !CanTakeReaction(useDrilledReactions, target, drilledTargets, caster))
                     {
                         continue;
                     }
@@ -832,10 +835,10 @@ public abstract partial class Commander
                 "Signal a squadmate within the aura of your commander's banner. That ally immediately attempts a Strike as a reaction.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new Commander.BrandishRequirement(), new Commander.InBannerAuraRequirement(),
+                        new SquadmateTargetRequirement(), new BrandishRequirement(), new InBannerAuraRequirement(),
                         new FriendCreatureTargetingRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                        new Commander.ReactionRequirement(), new Commander.CanMakeStrikeWithPrimary()
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                        new ReactionRequirement(), new CanMakeStrikeWithPrimary()
                     ],
                     (_, _, _) => -2.14748365E+09f))
             .WithActionCost(2)
@@ -913,10 +916,10 @@ public abstract partial class Commander
                 $"Signal one squadmate within the aura of your banner; that squadmate can immediately Step as a free action. If they end this movement next to an opponent, they can attempt to {UseCreatedTooltip("Reposition")} that target as a reaction. Repositioning requires a free hand.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new Commander.BrandishRequirement(), new Commander.InBannerAuraRequirement(),
+                        new SquadmateTargetRequirement(), new BrandishRequirement(), new InBannerAuraRequirement(),
                         new FriendCreatureTargetingRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                        new Commander.CanTargetBeginToMoveRequirement()
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                        new CanTargetBeginToMoveRequirement()
                     ],
                     (_, _, _) => -2.14748365E+09f))
             .WithActionCost(1).WithSoundEffect(SfxName.BeastRoar)
@@ -1004,8 +1007,8 @@ public abstract partial class Commander
                 $"Signal one squadmate who has an opponent within their reach. That ally can Shove or {UseCreatedTooltip("Reposition")} an opponent as a free action. If their maneuver is successful and the target ends their movement adjacent to a different squadmate, the second squadmate can attempt a melee Strike against that target as a reaction.",
                 new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new FriendOrSelfCreatureTargetingRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement()
+                        new SquadmateTargetRequirement(), new FriendOrSelfCreatureTargetingRequirement(),
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement()
                     ],
                     (_, _, _) => -2.14748365E+09f).WithAdditionalConditionOnTargetCreature((_, target) =>
                 {
@@ -1053,9 +1056,9 @@ public abstract partial class Commander
                         foreach (Creature creature in squadmates.Where(mate =>
                                      mate.IsAdjacentTo(enemy) && mate.PrimaryWeapon != null))
                         {
-                            if (new Commander.TacticResponseRequirement().Satisfied(caster, creature) != Usability.Usable)
+                            if (new TacticResponseRequirement().Satisfied(caster, creature) != Usability.Usable)
                                 continue;
-                            if (new Commander.ReactionRequirement().Satisfied(caster, creature) != Usability.Usable) continue;
+                            if (new ReactionRequirement().Satisfied(caster, creature) != Usability.Usable) continue;
                             var confirm = await creature.AskForConfirmation(creature.Illustration,
                                 "Do you wish to strike " + enemy.Name +
                                 (useDrilledReactions ? "?" : " using a reaction?"), "Yes");
@@ -1176,7 +1179,7 @@ public abstract partial class Commander
         endTarget.AdditionalRequirementOnAreaCaster += caster =>
         {
             List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
-            if (!squadmates.Any(cr => new Commander.TacticResponseRequirement().Satisfied(owner, cr)))
+            if (!squadmates.Any(cr => new TacticResponseRequirement().Satisfied(owner, cr)))
                 return Usability.NotUsable("There must be at least one squadmate who can respond to a tactic.");
             List<Creature> allies = caster.Battle.AllCreatures.Where(cr => cr.FriendOf(owner) && cr.Alive && !cr.HasTrait(Trait.Object) && !cr.HasTrait(Trait.Pseudocreature) && !cr.Destroyed && !cr.HasTrait(Trait.Illusion)).ToList();
             List<Creature> enemies = caster.Battle.AllCreatures.Where(cr => cr.EnemyOf(owner) && cr.Alive && !cr.HasTrait(Trait.Object) && !cr.HasTrait(Trait.Pseudocreature) && !cr.Destroyed && !cr.HasTrait(Trait.Illusion)).ToList();
@@ -1206,7 +1209,7 @@ public abstract partial class Commander
                 var moved = false;
                 foreach (Creature target in targets.ChosenCreatures)
                 {
-                    if (new Commander.TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
                     IEnumerable<Creature> enemies2 =
                         target.Battle.AllCreatures.Where(cr => cr.EnemyOf(target) && cr.Alive);
                     Creature? choice = await target.Battle.AskToChooseACreature(target, enemies2,
@@ -1258,9 +1261,9 @@ public abstract partial class Commander
                 [MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal all squadmates; each can immediately Interact to reload as a reaction.",
                 squadmates.Any(cr =>
-                    new Commander.ReactionRequirement().Satisfied(owner, cr) &&
+                    new ReactionRequirement().Satisfied(owner, cr) &&
                     cr.HeldItems.Any(item => item.EphemeralItemProperties.NeedsReload || item.EphemeralItemProperties.AmmunitionLeftInMagazine <= 0) &&
-                    new Commander.TacticResponseRequirement().Satisfied(owner, cr) && !cr.HasEffect(QEffectId.RangersCompanion))
+                    new TacticResponseRequirement().Satisfied(owner, cr) && !cr.HasEffect(QEffectId.RangersCompanion))
                     ? AllSquadmateInBannerTarget(owner)
                     : Target.Uncastable(
                         "There must be at least one squadmate who needs to reload and can take a reaction."))
@@ -1273,7 +1276,7 @@ public abstract partial class Commander
                 {
                     bool useDrilledReactions = UseDrilledReactions(caster);
                     if (!CanTakeReaction(useDrilledReactions, target, drilledTargets, caster)) continue;
-                    if (new Commander.TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
                     Item? tobeReloaded =
                         target.HeldItems.FirstOrDefault(item => item.EphemeralItemProperties.NeedsReload || item.EphemeralItemProperties.AmmunitionLeftInMagazine <= 0);
                     if (tobeReloaded == null) continue;
@@ -1305,8 +1308,8 @@ public abstract partial class Commander
                 [MTraits.Commander, MTraits.Tactic, Trait.Basic],
                 "Signal all squadmates within the aura of your commander’s banner; each can immediately Raise a Shield as a reaction. Squadmates who have a parry action (whether from a Parry weapon or a feat such as Dueling Parry or Twin Parry) may use that instead.\n\n{b}Special{/b} If one of your squadmates knows or has prepared the shield cantrip, they can cast it as a reaction instead of taking the actions normally granted by this tactic.",
                 squadmates.Any(cr =>
-                    new Commander.ReactionRequirement().Satisfied(owner, cr) &&
-                    new Commander.TacticResponseRequirement().Satisfied(owner, cr) && !cr.HasEffect(QEffectId.RangersCompanion))
+                    new ReactionRequirement().Satisfied(owner, cr) &&
+                    new TacticResponseRequirement().Satisfied(owner, cr) && !cr.HasEffect(QEffectId.RangersCompanion))
                     ? AllSquadmateInBannerTarget(owner)
                     : Target.Uncastable("There must be at least one squadmate who can take a reaction."))
             .WithActionCost(1).WithSoundEffect(SfxName.RaiseShield)
@@ -1318,7 +1321,7 @@ public abstract partial class Commander
                     if (target.HasEffect(QEffectId.RangersCompanion)) continue;
                     bool useDrilledReactions = UseDrilledReactions(caster);
                     if (!CanTakeReaction(useDrilledReactions, target, drilledTargets, caster)) continue;
-                    if (new Commander.TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
+                    if (new TacticResponseRequirement().Satisfied(caster, target) != Usability.Usable) continue;
                     CombatAction? raiseAShield = Possibilities.Create(target).Filter(ap =>
                     {
                         if (ap.CombatAction.ActionId != ActionId.RaiseShield ||
@@ -1411,10 +1414,10 @@ public abstract partial class Commander
                 {
                     return new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new Commander.InBannerAuraRequirement(),
+                        new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
                         new FriendOrSelfCreatureTargetingRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                        new Commander.ReactionRequirement()
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                        new ReactionRequirement()
                     ], (_, _, _) => int.MinValue);
                 }) as MultipleCreatureTargetsTarget)!.WithMinimumTargets(1).WithMustBeDistinct())
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
@@ -1497,20 +1500,21 @@ public abstract partial class Commander
                 {
                     return new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new Commander.InBannerAuraRequirement(),
-                        new FriendCreatureTargetingRequirement(), new Commander.CanTargetBeginToMoveRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                        new Commander.BrandishRequirement()
+                        new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
+                        new FriendCreatureTargetingRequirement(), new CanTargetBeginToMoveRequirement(),
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                        new BrandishRequirement()
                     ], (_, _, _) => int.MinValue);
                 }) as MultipleCreatureTargetsTarget)!.WithMinimumTargets(1).WithMustBeDistinct())
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                var drilledTargets = DrilledTargets(targets, caster);
-                bool moved = false;
+                List<Creature?> drilledTargets = DrilledTargets(targets, caster);
+                var moved = false;
+                List<Creature> players = [];
+                List<Creature> chosenEnemies = [];
                 foreach (Creature target in targets.ChosenCreatures)
                 {
-                    bool useDrilledReactions = UseDrilledReactions(caster);
                     if (await target.Battle.AskToChooseACreature(target,
                             target.Battle.AllCreatures.Where(cr =>
                                 cr.EnemyOf(target) && cr.DistanceTo(target) <= target.Speed + 1), target.Illustration,
@@ -1521,6 +1525,7 @@ public abstract partial class Commander
                     [
                         new CancelOption(true),
                     ];
+                    target.RegeneratePossibilities();
                     CombatAction? moveAction = (target.Possibilities
                             .Filter(ap =>
                             {
@@ -1542,8 +1547,7 @@ public abstract partial class Commander
                             }
                         })
                         .Where(tile =>
-                            (tile.LooksFreeTo(target) || tile.Equals(target.Occupies)) &&
-                            tile.IsAdjacentTo(enemy.Space.CenterTile))
+                            (tile.LooksFreeTo(target) || tile.Equals(target.Occupies)) && enemy.Space.Tiles.Any(t => t.IsAdjacentTo(tile)))
                         .ToList();
                     if (floodFill.Count == 0)
                     {
@@ -1552,7 +1556,7 @@ public abstract partial class Commander
                                 Squares = 100
                             })
                             .Where(tile =>
-                                tile.LooksFreeTo(target) && tile.IsAdjacentTo(enemy.Space.CenterTile))
+                                tile.LooksFreeTo(target) && enemy.Space.Tiles.Any(t => t.IsAdjacentTo(tile)))
                             .ToList();
                     }
 
@@ -1580,44 +1584,53 @@ public abstract partial class Commander
                     if (tile == null) continue;
                     await target.StrideAsync("Demoralizing Charge", strideTowards: tile);
                     moved = true;
+                    players.Add(target);
+                    chosenEnemies.Add(enemy);
                     target.AddQEffect(RespondedToTactic(caster));
-                    if (!target.IsAdjacentTo(enemy)) continue;
-                    if (!CanTakeReaction(useDrilledReactions, target, drilledTargets, caster)) continue;
-                    bool confirm = await target.AskForConfirmation(target.Illustration,
-                        "Do you wish to strike " + enemy.Name +
-                        (useDrilledReactions && IsDrilledTarget(drilledTargets, target) ? "?" : " using a reaction?"), "Yes");
-                    if (!confirm) continue;
-                    CombatAction? bestStrike = DetermineBestMeleeStrike(target);
-                    if (bestStrike == null) continue;
-                    bestStrike.WithActionCost(0);
-                    if (!bestStrike.CanBeginToUse(target)) continue;
-                    if (useDrilledReactions && IsDrilledTarget(drilledTargets, target))
-                    {
-                        caster.AddQEffect(DrilledReactionsExpended(caster));
-                    }
-                    else if (!target.HasEffect(MQEffectIds.AnimalReaction))
-                    {
-                        target.Actions.UseUpReaction();
-                    }
-                    else if (target.HasEffect(MQEffectIds.AnimalReaction))
-                    {
-                        target.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
-                    }
-
-                    CheckResult strike = await target.MakeStrike(bestStrike, enemy);
-                    QEffect memory = new()
-                    {
-                        Tag = strike,
-                        Source = target,
-                        Id = MQEffectIds.DemoCharge
-                    };
-                    enemy.AddQEffect(memory);
                 }
 
                 if (!moved)
                 {
                     spell.RevertRequested = true;
                     return;
+                }
+
+                for (var index = 0; index < players.Count; index++)
+                {
+                    Creature player = players[index];
+                    Creature enemy =  chosenEnemies[index];
+                    bool useDrilledReactions = UseDrilledReactions(caster);
+                    if (!player.IsAdjacentTo(enemy)) continue;
+                    if (!CanTakeReaction(useDrilledReactions, player, drilledTargets, caster)) continue;
+                    bool confirm = await player.AskForConfirmation(player.Illustration,
+                        "Do you wish to strike " + enemy.Name +
+                        (useDrilledReactions && IsDrilledTarget(drilledTargets, player) ? "?" : " using a reaction?"), "Yes");
+                    if (!confirm) continue;
+                    CombatAction? bestStrike = DetermineBestMeleeStrike(player);
+                    if (bestStrike == null) continue;
+                    bestStrike.WithActionCost(0);
+                    if (!bestStrike.CanBeginToUse(player)) continue;
+                    if (useDrilledReactions && IsDrilledTarget(drilledTargets, player))
+                    {
+                        caster.AddQEffect(DrilledReactionsExpended(caster));
+                    }
+                    else if (!player.HasEffect(MQEffectIds.AnimalReaction))
+                    {
+                        player.Actions.UseUpReaction();
+                    }
+                    else if (player.HasEffect(MQEffectIds.AnimalReaction))
+                    {
+                        player.RemoveAllQEffects(qf => qf.Id == MQEffectIds.AnimalReaction);
+                    }
+
+                    CheckResult strike = await player.MakeStrike(bestStrike, enemy);
+                    QEffect memory = new()
+                    {
+                        Tag = strike,
+                        Source = player,
+                        Id = MQEffectIds.DemoCharge
+                    };
+                    enemy.AddQEffect(memory);
                 }
 
                 List<Creature> enemies = caster.Battle.AllCreatures
@@ -1693,11 +1706,11 @@ public abstract partial class Commander
                 {
                     return new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new Commander.InBannerAuraRequirement(),
-                        new FriendCreatureTargetingRequirement(), new Commander.CanTargetBeginToMoveRequirement(),
-                        new Commander.ReactionRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                        new Commander.BrandishRequirement()
+                        new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
+                        new FriendCreatureTargetingRequirement(), new CanTargetBeginToMoveRequirement(),
+                        new ReactionRequirement(),
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                        new BrandishRequirement()
                     ], (_, _, _) => int.MinValue);
                 }) as MultipleCreatureTargetsTarget)!.WithMinimumTargets(1).WithMustBeDistinct())
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
@@ -1799,11 +1812,11 @@ public abstract partial class Commander
                 {
                     return new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new Commander.InBannerAuraRequirement(),
-                        new FriendCreatureTargetingRequirement(), new Commander.CanTargetBeginToMoveRequirement(),
-                        new Commander.ReactionRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                        new Commander.BrandishRequirement()
+                        new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
+                        new FriendCreatureTargetingRequirement(), new CanTargetBeginToMoveRequirement(),
+                        new ReactionRequirement(),
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                        new BrandishRequirement()
                     ], (_, _, _) => int.MinValue);
                 }) as MultipleCreatureTargetsTarget)!.WithMinimumTargets(1).WithMustBeDistinct())
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
@@ -1904,16 +1917,16 @@ public abstract partial class Commander
                 Target.MultipleCreatureTargets(
                     new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new FriendOrSelfCreatureTargetingRequirement(),
-                        new Commander.InBannerAuraRequirement(), new Commander.ReactionRequirement(), new Commander.TacticResponseRequirement(),
+                        new SquadmateTargetRequirement(), new FriendOrSelfCreatureTargetingRequirement(),
+                        new InBannerAuraRequirement(), new ReactionRequirement(), new TacticResponseRequirement(),
                         new UnblockedLineOfEffectCreatureTargetingRequirement(),
-                        new Commander.CanTargetTripAndIsAdjacentRequirement()
+                        new CanTargetTripAndIsAdjacentRequirement()
                     ], (_, _, _) => int.MinValue),
                     new CreatureTarget(RangeKind.Ranged,
                     [
-                        new Commander.SquadmateTargetRequirement(), new FriendOrSelfCreatureTargetingRequirement(),
-                        new Commander.InBannerAuraRequirement(), new Commander.ReactionRequirement(), new Commander.TacticResponseRequirement(),
-                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.CanTargetCastDamageSpell()
+                        new SquadmateTargetRequirement(), new FriendOrSelfCreatureTargetingRequirement(),
+                        new InBannerAuraRequirement(), new ReactionRequirement(), new TacticResponseRequirement(),
+                        new UnblockedLineOfEffectCreatureTargetingRequirement(), new CanTargetCastDamageSpell()
                     ], (_, _, _) => int.MinValue)).WithMustBeDistinct().WithMinimumTargets(2))
             .WithActionCost(2).WithSoundEffect(SfxName.Trip).WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
@@ -1997,8 +2010,7 @@ public abstract partial class Commander
                 Creature? original = mage.Battle.ActiveCreature;
                 mage.Battle.ActiveCreature = mage;
                 Possibilities spells = CreateSpells2(mage);
-                typeof(Creature).InvokeMember("Possibilities", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.SetProperty | BindingFlags.Instance, null, mage,
-                    [spells]);
+                mage.Possibilities = spells;
                 QEffect forcedChoice = new()
                 {
                     YouBeginAction = async (effect, action) =>
@@ -2173,10 +2185,10 @@ public abstract partial class Commander
             "Signal a squadmate within the aura of your banner who is holding or wearing a consumable that can be activated as a single action (if the target is wearing a consumable, they need a free hand to toss it). That squadmate can toss their consumable to any other squadmate within the aura of your banner as a free action, and the receiving squadmate can catch and activate the consumable as a reaction. If the receiving squadmate chooses not to catch the consumable or if they don’t have a free hand to catch it with, it lands on the ground in their space. ",
             new CreatureTarget(RangeKind.Ranged,
                 [
-                    new Commander.SquadmateTargetRequirement(), new Commander.InBannerAuraRequirement(),
-                    new FriendOrSelfCreatureTargetingRequirement(), new Commander.CanTargetThrowConsumable(),
-                    new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement(),
-                    new Commander.AdditionalSquadmateInBannerAuraRequirement()
+                    new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
+                    new FriendOrSelfCreatureTargetingRequirement(), new CanTargetThrowConsumable(),
+                    new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement(),
+                    new AdditionalSquadmateInBannerAuraRequirement()
                 ],
                 (_, _, _) => -2.14748365E+09f))
             .WithActionCost(1).WithSoundEffect(SfxName.ItemGet).WithEffectOnEachTarget(async (spell, caster, target, _) =>
@@ -2221,7 +2233,7 @@ public abstract partial class Commander
                 }
                 Creature? ally = await target.Battle.AskToChooseACreature(target,
                     target.Battle.AllCreatures.Where(cr =>
-                        IsSquadmate(caster, cr) && new Commander.InBannerAuraRequirement().Satisfied(caster, cr)),
+                        IsSquadmate(caster, cr) && new InBannerAuraRequirement().Satisfied(caster, cr)),
                     target.Illustration, "Choose a squadmate to toss " + item + " to.", "", "Cancel");
                 if (ally == null)
                 {
@@ -2234,7 +2246,7 @@ public abstract partial class Commander
                 else if (target.HeldItems.Contains(item))
                     target.HeldItems.Remove(item);
                 bool useDrilledReactions = UseDrilledReactions(caster);
-                if (ally.HasFreeHand && new Commander.TacticResponseRequirement().Satisfied(caster, ally) && new Commander.ReactionRequirement().Satisfied(caster, ally))
+                if (ally.HasFreeHand && new TacticResponseRequirement().Satisfied(caster, ally) && new ReactionRequirement().Satisfied(caster, ally))
                 {
                     bool verify = await ally.AskForConfirmation(ally.Illustration,
                         "Would you like to catch and use " +
@@ -2247,6 +2259,7 @@ public abstract partial class Commander
                     }
                     ally.HeldItems.Add(item);
                     await ally.Battle.GameLoop.StateCheck();
+                    ally.RegeneratePossibilities();
                     if (item.ProvidesItemAction?.Invoke(ally, item) is ActionPossibility actionPossibility)
                     {
                         CombatAction action = actionPossibility.CombatAction.WithActionCost(0);
@@ -2296,9 +2309,9 @@ public abstract partial class Commander
             "Signal a squadmate within the aura of your commander’s banner; as a free action, that squadmate can Stride directly toward any other squadmate you are both observing. If the first squadmate ends this movement adjacent to another squadmate, the first squadmate can immediately Leap up to 25 feet as a reaction, boosted by the other squadmate. This distance increases to 40 feet if you have legendary proficiency in Warfare Lore.",
             new CreatureTarget(RangeKind.Ranged,
                 [
-                    new Commander.SquadmateTargetRequirement(), new Commander.InBannerAuraRequirement(),
+                    new SquadmateTargetRequirement(), new InBannerAuraRequirement(),
                     new FriendOrSelfCreatureTargetingRequirement(),
-                    new UnblockedLineOfEffectCreatureTargetingRequirement(), new Commander.TacticResponseRequirement()
+                    new UnblockedLineOfEffectCreatureTargetingRequirement(), new TacticResponseRequirement()
                 ],
                 (_, _, _) => -2.14748365E+09f))
             .WithActionCost(1).WithSoundEffect(SfxName.Footsteps)
@@ -2315,7 +2328,7 @@ public abstract partial class Commander
                     return;
                 }
                 target.AddQEffect(RespondedToTactic(caster));
-                if (!target.IsAdjacentTo(ally) || new Commander.ReactionRequirement().Satisfied(caster, target) != Usability.Usable) return;
+                if (!target.IsAdjacentTo(ally) || new ReactionRequirement().Satisfied(caster, target) != Usability.Usable) return;
                 bool useDrilledReactions = UseDrilledReactions(caster);
                 int distance = caster.Proficiencies.Get(WarfareLoreTrait) == Proficiency.Legendary ? 8 : 5; 
                 CombatAction combatAction = CommonCombatActions.Leap(target, distance).WithActionCost(0);

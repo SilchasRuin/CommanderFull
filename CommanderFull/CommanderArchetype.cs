@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Core;
 using Dawnsbury.Core.Animations;
@@ -47,7 +50,7 @@ public class CommanderArchetype
                 values.AddSelectionOption(new MultipleFeatSelectionOption("CommanderTactics", "Prepared Tactics",
                         SelectionOption.PRECOMBAT_PREPARATIONS_LEVEL, feat => feat.HasTrait(MTraits.Tactic),
                         1));
-                values.TrainInThisOrSubstitute(Commander.WarfareLore);
+                values.TrainInThisOrSubstitute(WarfareLore);
                 values.SetProficiency(MTraits.Commander, Proficiency.Trained);
             })
             .WithOnCreature(cr =>

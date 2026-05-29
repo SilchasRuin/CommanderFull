@@ -1,4 +1,8 @@
-﻿using Dawnsbury.Audio;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Dawnsbury.Audio;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Campaign.Path;
 using Dawnsbury.Core;
@@ -47,7 +51,7 @@ public abstract partial class Commander
         foreach (Feat tactic in LoadTactics())
         {
             int level = tactic.Traits.Contains(MTraits.LegendaryTactic) ? 19 : tactic.Traits.Contains(MTraits.MasterTactic) ? 15 : tactic.Traits.Contains(MTraits.ExpertTactic) ? 7 : 1;
-            Feat prereq = CreatePrereqTacticsBasic((Commander.ActionFeat)tactic, level);
+            Feat prereq = CreatePrereqTacticsBasic((ActionFeat)tactic, level);
             prereq.WithIllustration(tactic.Illustration);
             if (prereq.Traits.Any(trait => trait == MTraits.ExpertTactic)) 
                 prereq.WithPrerequisite(values => values.HasFeat(MFeatNames.Commander) || values.HasFeat(MFeatNames.TacticalExcellence8), "You must be a Commander or have the level 8 Tactical Excellence feat to select this tactic.");
@@ -590,7 +594,7 @@ public abstract partial class Commander
         foreach (Feat feat in CommanderArchetype.LoadArchetypeFeats())
             yield return feat;
     }
-    public static TrueFeat CreatePrereqTacticsBasic(Commander.ActionFeat feat, int level)
+    public static TrueFeat CreatePrereqTacticsBasic(ActionFeat feat, int level)
     {
         List<Trait> traits = [];
         traits.AddRange(feat.Traits);
@@ -679,18 +683,14 @@ public abstract partial class Commander
                     options.Add(Option.ChooseCreature("drilled reactions target", creature,
                         async () =>
                         {
-                            await creature.Battle.GameLoop.FullCast(CombatAction
-                                .CreateSimple(creature, "choose self", Trait.DoNotShowInCombatLog,
-                                    Trait.DoNotShowOverheadOfActionName, Trait.DoesNotBreakStealth).WithActionCost(0)
-                                .WithEffectOnSelf(cr1 =>
-                                    cr1.AddQEffect(new QEffect("Default Target",
-                                            "You are the default target for drilled reactions.",
-                                            ExpirationCondition.Never,
-                                            self, MIllustrations.Toggle)
-                                    {
-                                        Id = MQEffectIds.DrilledTarget,
-                                        DoNotShowUpOverhead = true
-                                    })));
+                            creature.AddQEffect(new QEffect("Default Target",
+                                "You are the default target for drilled reactions.",
+                                ExpirationCondition.Never,
+                                self, MIllustrations.Toggle)
+                            {
+                                Id = MQEffectIds.DrilledTarget,
+                                DoNotShowUpOverhead = true
+                            });
                         }, noConfirmation: true));
                 }
                 RequestResult defaultChoice = await self.Battle.SendRequest(new AdvancedRequest(self,
@@ -1076,7 +1076,14 @@ public abstract partial class Commander
                     });
                 }
             },
-            WhenExpires = _ => illusion.DieFastAndWithoutAnimation(),
+            WhenExpires = _ => source.AddQEffect(new QEffect()
+            {
+                StateCheckWithVisibleChanges = async qf =>
+                {
+                    await illusion.DieFastAndWithoutAnimation();
+                    qf.ExpiresAt = ExpirationCondition.Immediately;
+                }
+            }),
             TileQEffectId = MTileQEffectIds.Banner,
             Illustration = MIllustrations.Banner,
             Name = source.Name + "'s Banner",
@@ -1147,7 +1154,7 @@ public abstract partial class Commander
         List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
         EmanationTarget emanationTarget = Target.Emanation(100);
         emanationTarget.WithAdditionalRequirementOnCaster(self =>
-            squadmates.Any(cr => new Commander.TacticResponseRequirement().Satisfied(self, cr))
+            squadmates.Any(cr => new TacticResponseRequirement().Satisfied(self, cr))
                 ? Usability.Usable
                 : Usability.NotUsable("There must be at least one squadmate who can respond to a tactic."));
         return emanationTarget.WithIncludeOnlyIf((_, cr) => IsSquadmate(owner, cr));
@@ -1157,10 +1164,10 @@ public abstract partial class Commander
     {
         List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
         return Target.Emanation(100).WithAdditionalRequirementOnCaster(self =>
-                squadmates.Any(cr => new Commander.TacticResponseRequirement().Satisfied(self, cr))
+                squadmates.Any(cr => new TacticResponseRequirement().Satisfied(self, cr))
                     ? Usability.Usable
                     : Usability.NotUsable("There must be at least one squadmate who can respond to a tactic."))
-            .WithIncludeOnlyIf((_, cr) => IsSquadmate(owner, cr) && new Commander.InBannerAuraRequirement().Satisfied(owner, cr));
+            .WithIncludeOnlyIf((_, cr) => IsSquadmate(owner, cr) && new InBannerAuraRequirement().Satisfied(owner, cr));
     }
 
     internal static bool IsSquadmate(Creature commander, Creature squadmate)
@@ -1288,7 +1295,7 @@ public abstract partial class Commander
         public override Usability Satisfied(Creature source, Creature target)
         {
             if (source.QEffects.Any(qEffect => qEffect.Id == MQEffectIds.ExpendedDrilled) &&
-                !target.Actions.CanTakeReaction() && !Commander.AnimalReactionAvailable(source, target))
+                !target.Actions.CanTakeReaction() && !AnimalReactionAvailable(source, target))
             {
                 return Usability.NotUsableOnThisCreature(
                     "You have used your Drilled Reactions already, and your target doesn't have a reaction available.");
@@ -1332,10 +1339,10 @@ public abstract partial class Commander
     {
         public override Usability Satisfied(Creature source, Creature target)
         {
-            Creature? bannerHolder = source.Battle.AllCreatures.FirstOrDefault(cr => Commander.IsMyBanner(source, cr));
-            Tile? bannerTile = source.Battle.Map.AllTiles.FirstOrDefault(tile => Commander.IsMyBanner(source, tile));
+            Creature? bannerHolder = source.Battle.AllCreatures.FirstOrDefault(cr => IsMyBanner(source, cr));
+            Tile? bannerTile = source.Battle.Map.AllTiles.FirstOrDefault(tile => IsMyBanner(source, tile));
             Tile? banner = bannerHolder != null ? bannerHolder.Occupies : bannerTile;
-            if (banner != null && target.DistanceTo(banner) <= Commander.GetBannerRadius(source))
+            if (banner != null && target.DistanceTo(banner) <= GetBannerRadius(source))
             {
                 return Usability.Usable;
             }
@@ -1357,7 +1364,7 @@ public abstract partial class Commander
     {
         public override Usability Satisfied(Creature source, Creature target)
         {
-            if (!Commander.IsSquadmate(source, target))
+            if (!IsSquadmate(source, target))
             {
                 return Usability.NotUsableOnThisCreature(target.Name + " is not a squadmate.");
             }
@@ -1394,7 +1401,7 @@ public abstract partial class Commander
     {
         public override Usability Satisfied(Creature source, Creature target)
         {
-            bool canUse = target.Spellcasting?.Sources.Any(list => list.Spells.Any(Commander.SpellDealsDamage) || list.Cantrips.Any(Commander.SpellDealsDamage)) ?? false;
+            bool canUse = target.Spellcasting?.Sources.Any(list => list.Spells.Any(SpellDealsDamage) || list.Cantrips.Any(SpellDealsDamage)) ?? false;
             return !canUse ? Usability.NotUsableOnThisCreature(target.Name + " cannot cast a damaging spell.") : Usability.Usable;
         }
     }
@@ -1403,19 +1410,19 @@ public abstract partial class Commander
     {
         public override Usability Satisfied(Creature source, Creature target)
         {
-            if (Commander.IsSquadmate(source, target) && Commander.HasConsumableToToss(target))
+            if (IsSquadmate(source, target) && HasConsumableToToss(target))
                 return Usability.Usable;
-            return Commander.IsSquadmate(source, target) ? Usability.NotUsableOnThisCreature("Your squadmate does not have a legal item or does not have a free hand to toss.") : Usability.NotUsableOnThisCreature("This creature is not a squadmate.");
+            return IsSquadmate(source, target) ? Usability.NotUsableOnThisCreature("Your squadmate does not have a legal item or does not have a free hand to toss.") : Usability.NotUsableOnThisCreature("This creature is not a squadmate.");
         }
     }
     public class AdditionalSquadmateInBannerAuraRequirement : CreatureTargetingRequirement
     {
         public override Usability Satisfied(Creature source, Creature target)
         {
-            Creature? bannerHolder = source.Battle.AllCreatures.FirstOrDefault(cr => Commander.IsMyBanner(source, cr));
-            Tile? bannerTile = source.Battle.Map.AllTiles.FirstOrDefault(tile => Commander.IsMyBanner(source, tile));
+            Creature? bannerHolder = source.Battle.AllCreatures.FirstOrDefault(cr => IsMyBanner(source, cr));
+            Tile? bannerTile = source.Battle.Map.AllTiles.FirstOrDefault(tile => IsMyBanner(source, tile));
             Tile? banner = bannerHolder != null ? bannerHolder.Occupies : bannerTile;
-            if (banner != null && target.Battle.AllCreatures.Any(cr => Commander.IsSquadmate(source, cr) && cr != target && cr.DistanceTo(banner) <= Commander.GetBannerRadius(source)))
+            if (banner != null && target.Battle.AllCreatures.Any(cr => IsSquadmate(source, cr) && cr != target && cr.DistanceTo(banner) <= GetBannerRadius(source)))
             {
                 return Usability.Usable;
             }
@@ -1438,7 +1445,7 @@ public abstract partial class Commander
                                               (ActionCost.HasValue
                                                   ? " " + RulesBlock.GetIconTextFromNumberOfActions(ActionCost.Value)
                                                   : "");
-        public Commander.ActionFeat WithActionCost(int actionCost)
+        public ActionFeat WithActionCost(int actionCost)
         {
             ActionCost = actionCost;
             return this;

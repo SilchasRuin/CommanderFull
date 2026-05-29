@@ -4,7 +4,16 @@
         <TargetFramework>net10.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Platforms>x64</Platforms>
+        <NoWarn>1998;NETSDK1206;NU1901;NU1902;NU1903;NU1904;VSTHRD200; CS0618</NoWarn>
     </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
 
     <ItemGroup>
       <Reference Include="Common">
@@ -20,7 +29,7 @@
         <HintPath>D:\SteamLibrary\steamapps\workshop\content\2693730\3710730920\CustomModsV3\Dawnsbury.Mods.LoresAndWeaknesses.dll</HintPath>
       </Reference>
       <Reference Include="ExplorationActivities">
-        <HintPath>D:\SteamLibrary\steamapps\common\Dawnsbury Days\CustomMods\ExplorationActivities.dll</HintPath>
+        <HintPath>C:\Users\jcbco\RiderProjects\Debug\ExplorationActivities\bin\Debug\net10.0-windows\ExplorationActivities.dll</HintPath>
       </Reference>
       <Reference Include="MonoGame.Framework">
         <HintPath>D:\SteamLibrary\steamapps\common\Dawnsbury Days\Data\MonoGame.Framework.dll</HintPath>

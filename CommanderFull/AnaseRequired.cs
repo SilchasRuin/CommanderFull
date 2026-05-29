@@ -1,4 +1,6 @@
-﻿using Dawnsbury.Core;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Dawnsbury.Core;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CombatActions;
 using Dawnsbury.Core.Creatures;

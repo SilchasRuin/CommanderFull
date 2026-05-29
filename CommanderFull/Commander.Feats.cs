@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using Dawnsbury.Audio;
 using Dawnsbury.Campaign.Encounters.Tutorial;
 using Dawnsbury.Campaign.Path;
@@ -947,7 +950,7 @@ public abstract partial class Commander
                             [MTraits.Brandish, MTraits.Commander, Trait.Manipulate, Trait.Basic],
                             "You and any ally adjacent to you have concealment from ranged attacks until the start of your next turn",
                             (Target.AlliesOnlyEmanation(1) as AreaTarget)!.WithAdditionalRequirementOnCaster(creature =>
-                                new Commander.BrandishRequirement().Satisfied(creature, creature)))
+                                new BrandishRequirement().Satisfied(creature, creature)))
                         .WithActionCost(1).WithSoundEffect(SfxName.ItemAction)
                         .WithEffectOnEachTarget((action, caster, target, _) =>
                         {
@@ -1004,9 +1007,9 @@ public abstract partial class Commander
                             ],
                             "Each ally in your banner's aura reduces their frightened and stupefied conditions by 1, and can make a Will save against a standard level-based DC for your level, and on a success or better remove the Confused or Paralyzed condition. Regardless of the result, any ally that attempts this save is temporarily immune to Banner's Inspiration for 10 minutes.",
                             new EmanationTarget(100, false)
-                                .WithAdditionalRequirementOnCaster(cr => new Commander.BrandishRequirement().Satisfied(cr, cr))
+                                .WithAdditionalRequirementOnCaster(cr => new BrandishRequirement().Satisfied(cr, cr))
                                 .WithIncludeOnlyIf((_, creature) =>
-                                    new Commander.InBannerAuraRequirement().Satisfied(effect.Owner, creature)))
+                                    new InBannerAuraRequirement().Satisfied(effect.Owner, creature)))
                         .WithActionCost(1).WithSoundEffect(SfxName.Drum)
                         .WithActionId(MActionIds.BannersInspiration)
                         .WithEffectOnEachTarget(async (spell, caster, target, _) =>
@@ -1580,9 +1583,9 @@ public abstract partial class Commander
                         ],
                         $"You and all allies within the aura of your commander's banner when you use this action gain resistance {owner.Abilities.Intelligence} to bludgeoning, piercing, and slashing damage until the start of your next turn.",
                         Target.Emanation(GetBannerRadius(owner))
-                            .WithAdditionalRequirementOnCaster(cr => new Commander.BrandishRequirement().Satisfied(cr, cr))
+                            .WithAdditionalRequirementOnCaster(cr => new BrandishRequirement().Satisfied(cr, cr))
                             .WithIncludeOnlyIf((_, cr) =>
-                                new Commander.InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
+                                new InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
                     .WithActionCost(1).WithSoundEffect(SfxName.BeastRoar)
                     .WithEffectOnEachTarget((spell, caster, target, _) =>
                     {
@@ -1619,9 +1622,9 @@ public abstract partial class Commander
                         ],
                         $"You restore {4 + (owner.Level - 8) / 2}d6 Hit Points to each ally within the aura of your commander's banner. You may only use Rallying Banner once per encounter.",
                         Target.Emanation(GetBannerRadius(owner))
-                            .WithAdditionalRequirementOnCaster(cr => new Commander.BrandishRequirement().Satisfied(cr, cr))
+                            .WithAdditionalRequirementOnCaster(cr => new BrandishRequirement().Satisfied(cr, cr))
                             .WithIncludeOnlyIf((_, cr) =>
-                                new Commander.InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
+                                new InBannerAuraRequirement().Satisfied(owner, cr) && cr.FriendOf(owner)))
                     .WithActionCost(1).WithSoundEffect(SfxName.Healing).WithActionId(MActionIds.RallyBanner)
                     .WithEffectOnChosenTargets(async (spell, caster, targets) =>
                     {
