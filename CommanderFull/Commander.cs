@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Dawnsbury.Audio;
+﻿using Dawnsbury.Audio;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Campaign.Path;
 using Dawnsbury.Core;
@@ -15,14 +11,17 @@ using Dawnsbury.Core.CharacterBuilder.Feats.Features;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb.Common;
 using Dawnsbury.Core.CharacterBuilder.Library;
 using Dawnsbury.Core.CharacterBuilder.Selections.Options;
+using Dawnsbury.Core.CharacterBuilder.Spellcasting;
 using Dawnsbury.Core.CombatActions;
 using Dawnsbury.Core.Coroutines;
 using Dawnsbury.Core.Coroutines.Options;
 using Dawnsbury.Core.Coroutines.Requests;
 using Dawnsbury.Core.Creatures;
+using Dawnsbury.Core.Intelligence;
 using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Core;
 using Dawnsbury.Core.Mechanics.Enumerations;
+using Dawnsbury.Core.Mechanics.Rules;
 using Dawnsbury.Core.Mechanics.Targeting;
 using Dawnsbury.Core.Mechanics.Targeting.TargetingRequirements;
 using Dawnsbury.Core.Mechanics.Targeting.Targets;
@@ -283,6 +282,13 @@ public abstract partial class Commander
                 cr.AddQEffect(new QEffect()
                 {
                     ProvideSectionIntoSubmenu = (_, possibility) => possibility.SubmenuId == MSubmenuIds.Commander
+                        ? new PossibilitySection("Master").WithPossibilitySectionId(MPossibilitySectionIds
+                            .MasterTactics)
+                        : null
+                });
+                cr.AddQEffect(new QEffect()
+                {
+                    ProvideSectionIntoSubmenu = (_, possibility) => possibility.SubmenuId == MSubmenuIds.Commander
                         ? new PossibilitySection("Toggle").WithPossibilitySectionId(MPossibilitySectionIds
                             .Toggle)
                         : null
@@ -317,12 +323,11 @@ public abstract partial class Commander
                         " actions if your Warfare Lore is better than the original skill check.")
                     {
                         Id = MQEffectIds.WarfareExpertise,
-                        StartOfCombat = _ =>
+                        StartOfCombat = async _ =>
                         {
                             if (cr.Battle.AllCreatures.Any(enemy => enemy.EnemyOf(cr) && cr.CanSee(enemy)))
                                 cr.AddQEffect(new QEffect
                                     { OfferAlternateSkillForInitiative = _ => WarfareLore });
-                            return Task.CompletedTask;
                         },
                         YouBeginAction = async (_, action) =>
                         {
@@ -729,22 +734,23 @@ public abstract partial class Commander
             });
     }
 
-    private static List<Creature?> DrilledTargets(ChosenTargets targets, Creature commander)
+    internal static List<Creature> DrilledTargets(ChosenTargets targets, Creature commander)
     {
-        List<Creature?> drilledTargets =
-        [
-            targets.ChosenCreatures.FirstOrDefault(cr =>
-                cr.QEffects.Any(qf => qf.Id == MQEffectIds.DrilledTarget && qf.Source == commander) &&
-                !cr.HasEffect(MQEffectIds.AnimalReaction)) ??
-            targets.ChosenCreatures.FirstOrDefault(cr => !cr.HasEffect(MQEffectIds.AnimalReaction))
-
-        ];
-        if (commander.HasFeat(MFeatNames.DrilledReflexes))
+        return DrilledTargets(targets.ChosenCreatures, commander);
+    }
+    
+    internal static List<Creature> DrilledTargets(List<Creature> squadmates, Creature commander)
+    {
+        List<Creature> drilledTargets = squadmates.Where(cr => cr.QEffects.Any(qf => qf.Id == MQEffectIds.DrilledTarget && qf.Source == commander) && !cr.HasEffect(MQEffectIds.AnimalReaction)).ToList();
+        if (drilledTargets.Count == 0)
         {
-            drilledTargets.Add(targets.ChosenCreatures.Find(cr => cr.QEffects.Any(qf => qf.Id == MQEffectIds.DrilledTarget && qf.Source == commander) && !cr.HasEffect(MQEffectIds.AnimalReaction) && !drilledTargets.Contains(cr)) ??
-                                targets.ChosenCreatures.FirstOrDefault(cr => !cr.HasEffect(MQEffectIds.AnimalReaction) && !drilledTargets.Contains(cr)));
+            drilledTargets.Add(squadmates.FirstOrDefault(cr => !cr.HasEffect(MQEffectIds.AnimalReaction)) ?? squadmates[0]);
         }
-        if (drilledTargets.Count == 0) drilledTargets.Add(targets.ChosenCreatures[0]);
+        if (commander.HasEffect(MQEffectIds.DrilledReflexes) && squadmates.Count > 1 &&
+            drilledTargets.Count == 1)
+        {
+            drilledTargets.Add(squadmates.FirstOrDefault(creature => !drilledTargets.Contains(creature) && !creature.HasEffect(MQEffectIds.AnimalReaction)) ?? squadmates[1]);
+        }
         return drilledTargets;
     }
 
@@ -782,7 +788,8 @@ public abstract partial class Commander
              }
          });
      }
-     private static bool SpellDealsDamage(CombatAction action)
+
+    internal static bool SpellDealsDamage(CombatAction action)
      {
          if (action.SpellcastingSource == null || action.ActionCost == 3 || action.ActionCost == -2) return false;
          if ((!action.Description.ContainsIgnoreCase("deal") &&
@@ -791,8 +798,8 @@ public abstract partial class Commander
               !action.Description.ContainsIgnoreCase("damage")) ||
              action.Description.ContainsIgnoreCase("battleform"))
              return false;
-         // if (!action.WillBecomeHostileAction) return false;
-         if (action.Target == Target.AdjacentCreature()) return false;
+         if (action.Target == Target.AdjacentCreature() || action.Target == Target.Touch() ||
+             action.Target is CreatureTarget { RangeKind: RangeKind.Melee }) return false;
          return action.Description.Contains("d4") || action.Description.Contains("d6") ||
                 action.Description.Contains("d8") || action.Description.Contains("d10") ||
                 action.Description.Contains("d12") ||
@@ -822,124 +829,127 @@ public abstract partial class Commander
         }
         return bestStrike;
     }
-
-    //if size is added, update this
-
+    
     #region miscellanious combat actions
 
     public static CombatAction Reposition(Creature owner)
     {
+        const string improvName = "[REPOSITION IMPROVEMENT]";
         return new CombatAction(owner, MIllustrations.Reposition, "Reposition",
                 [Trait.Basic, Trait.Attack, Trait.AttackDoesNotTargetAC],
                 "{i}You muscle a creature or object around.{/i}\n\n" +
-                "{b}Requirement{/b} You must have a hand free or be grappling the target.\n\n" +
+                "{b}Requirement{/b} You must have a hand free or be grappling the target and the target isn't more than one size larger than you.\n\n" +
                 "Attempt an Athletics check against an adjacent target's Fortitude DC." + S.FourDegreesOfSuccess(
                     "You move the creature up to 10 feet. It must remain within your reach during this movement, and you can't move it into or through obstacles.",
                     "You move the target up to 5 feet. It must remain within your reach during this movement, and you can't move it into or through obstacles.",
                     null, "The target can move you up to 5 feet as though it successfully Repositioned you."),
-                Target.AdjacentCreature().WithAdditionalConditionOnTargetCreature((self, target) =>
-                    self.HasFreeHand || self.HeldItems.Any(item => item.Name == target.Name)
-                        ? Usability.Usable
-                        : Usability.NotUsableOnThisCreature(
-                            "You must have a hand free or be grappling this creature.")))
+                new CreatureTarget( // Custom target that will let you target allies
+                    RangeKind.Melee, 
+                    [
+                        MeleeReachCreatureTargetingRequirement.WithWeaponOfTrait(Trait.Grapple),
+                        new TargetMustNotBeTwoSizesAboveYouCreatureTargetingRequirement(),
+                        new LegacyCreatureTargetingRequirement((a, d) =>
+                        {
+                            if (a == d) // Cannot be self
+                                return Usability.NotUsableOnThisCreature("self");
+                            if (!a.HasFreeHand && !a.WieldsItem(Trait.Grapple)) // Need a free hand or a grapple weapon
+                                return Usability.CommonReasons.NoFreeHandForManeuver;
+                            return d.WeaknessAndResistance.ImmunityToForcedMovement ? // Mustn't be immune
+                                Usability.NotUsableOnThisCreature("immune to forced movement") : Usability.Usable;
+                        })
+                    ],
+                    (_, _, _) => int.MinValue))
             .WithActionCost(1).WithSoundEffect(SfxName.Shove).WithActionId(MActionIds.Reposition)
             .WithActiveRollSpecification(new ActiveRollSpecification(TaggedChecks.SkillCheck(Skill.Athletics),
                 TaggedChecks.DefenseDC(Defense.Fortitude)))
+           .WithTargetingTooltip((action, target, _) =>
+            {
+                QEffect? improve = null;
+                if (target.FriendOf(action.Owner))
+                {
+                    improve = new QEffect()
+                    {
+                        AdjustActiveRollCheckResult = (_, action2, target2, result) =>
+                            action2 == action && target2 == target
+                                ? result.ImproveByOneStep()
+                                : result
+                    };
+                    action.Owner.AddQEffect(improve);
+                }
+                CheckBreakdown result = CombatActionExecution.BreakdownAttackForTooltip(action, target);
+                if (improve is not null)
+                    action.Owner.RemoveAllQEffects(qf => qf == improve);
+                return result.TooltipDescription;
+            })
+            .WithPrologueEffectOnChosenTargetsBeforeRolls(async (action, self, targets) =>
+            {
+                if (targets.ChosenCreature?.FriendOf(action.Owner) ?? false)
+                    self.AddQEffect(new QEffect()
+                    {
+                        Name = improvName,
+                        AdjustActiveRollCheckResult = (_, action2, target2, result) =>
+                            action2 == action && target2 == targets.ChosenCreature
+                                ? result.ImproveByOneStep()
+                                : result
+                    });
+            })
             .WithEffectOnEachTarget(async (_, caster, target, result) =>
             {
+                await caster.FictitiousSingleTileMove(caster.Occupies);
                 switch (result)
                 {
                     case CheckResult.CriticalSuccess:
-                        if (target.WeaknessAndResistance.ImmunityToForcedMovement)
-                        {
-                            target.Overhead("{i}immune{/i}", Color.White,
-                                target + " is immune to forced movement and can't be repositioned.");
-                        }
-                        else
-                        {
-                            IEnumerable<Tile> tiles = caster.Battle.Map.AllTiles.Where(tile =>
-                                tile.IsTrulyGenuinelyFreeTo(target) && tile.DistanceTo(target.Occupies) <= 2 &&
-                                tile.IsAdjacentTo(caster.Occupies));
-                            Tile moveTo = (await caster.Battle.AskToChooseATile(caster ,tiles,
-                                MIllustrations.Reposition,
-                                "Choose where to reposition " + target.Name + ".", "", false, false, target))!;
-                            await target.MoveTo(moveTo, null,
-                                new MovementStyle()
-                                {
-                                    ForcedMovement = true, Shifting = true, ShortestPath = true,
-                                    MaximumSquares = 100
-                                });
-                        }
-
+                        await ExecuteRepositionLogic(caster, target, 2);
                         break;
                     case CheckResult.Success:
-                        if (target.WeaknessAndResistance.ImmunityToForcedMovement)
-                        {
-                            target.Overhead("{i}immune{/i}", Color.White,
-                                target + " is immune to forced movement and can't be repositioned.");
-                        }
-                        else
-                        {
-                            IEnumerable<Tile> tile2 = caster.Battle.Map.AllTiles.Where(tile =>
-                                tile.IsTrulyGenuinelyFreeTo(target) && tile.DistanceTo(target.Occupies) <= 1 &&
-                                tile.IsAdjacentTo(caster.Occupies));
-                            Tile moveTo2 = (await caster.Battle.AskToChooseATile(caster, tile2,
-                                MIllustrations.Reposition,
-                                "Choose where to reposition " + target.Name + ".", "", false, false, target))!;
-                            await target.MoveTo(moveTo2, null,
-                                new MovementStyle()
-                                {
-                                    ForcedMovement = true, Shifting = true, ShortestPath = true,
-                                    MaximumSquares = 100
-                                });
-                        }
-
+                        await ExecuteRepositionLogic(caster, target, 1);
                         break;
                     case CheckResult.CriticalFailure:
-                        if (caster.WeaknessAndResistance.ImmunityToForcedMovement)
-                        {
-                            caster.Overhead("{i}immune{/i}", Color.White,
-                                caster + " is immune to forced movement and can't be repositioned.");
-                        }
-                        else
-                        {
-                            if (target.OwningFaction != caster.Battle.You)
-                            {
-                                IEnumerable<Tile> tiles2 = caster.Battle.Map.AllTiles.Where(tile =>
-                                    tile.IsTrulyGenuinelyFreeTo(caster) && tile.DistanceTo(caster.Occupies) <= 1 &&
-                                    tile.IsAdjacentTo(target.Occupies));
-                                Tile[] enumerable = tiles2 as Tile[] ?? tiles2.ToArray();
-                                Tile moveTo3 = (enumerable.ToList().GetRandomForAi() ?? enumerable.FirstOrDefault())!;
-                                await caster.MoveTo(moveTo3, null,
-                                    new MovementStyle()
-                                    {
-                                        ForcedMovement = true, Shifting = true, ShortestPath = true,
-                                        MaximumSquares = 100
-                                    });
-                            }
-                            else
-                            {
-                                IEnumerable<Tile> tiles2 = caster.Battle.Map.AllTiles.Where(tile =>
-                                    tile.IsTrulyGenuinelyFreeTo(caster) && tile.DistanceTo(caster.Occupies) <= 1 &&
-                                    tile.IsAdjacentTo(target.Occupies));
-                                Tile moveTo4 = (await target.Battle.AskToChooseATile(caster, tiles2,
-                                    MIllustrations.Reposition,
-                                    "Choose where to reposition " + caster.Name + ".", "", false, false, target))!;
-                                await caster.MoveTo(moveTo4, null,
-                                    new MovementStyle()
-                                    {
-                                        ForcedMovement = true, Shifting = true, ShortestPath = true,
-                                        MaximumSquares = 100
-                                    });
-                            }
-                        }
-
+                        if (!target.FriendOf(caster))
+                            await ExecuteRepositionLogic(target, caster, 1, true);
                         break;
-                    case CheckResult.Failure:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(result), result, null);
                 }
+
+                caster.RemoveAllQEffects(qf => qf.Name is improvName);
+            });
+    }
+    public static async Task ExecuteRepositionLogic(Creature attacker, Creature defender, int distance, bool randomTile = false)
+    {
+        int reach = GrappleTag.GetGrappleReach(attacker);
+        List<Tile> tiles = attacker.Battle.Map.AllTiles
+            .Where(tile =>
+                !ReferenceEquals(defender.Space.TopLeftTile, tile)
+                && tile.IsTrulyGenuinelyFreeTo(defender)
+                && defender.Space.TopLeftTile.DistanceTo(tile) <= distance
+                && tile
+                    .TilesToTheBottomRight(defender.Space.SizeInSquares)
+                    .Any(subspace => attacker.DistanceToWith10FeetException(subspace) <= reach))
+            .ToList();
+        if (tiles.Count == 0)
+        {
+            attacker.Overhead("*no valid tiles*", Color.Red, "Reposition failed: No free spaces.");
+            return;
+        }
+        Tile? moveTo;
+        if (randomTile)
+            moveTo = tiles.GetRandomForAi();
+        else
+            moveTo = await attacker.Battle.AskToChooseATile(
+                attacker, tiles,
+                MIllustrations.Reposition, //IllustrationName.GenericCombatManeuver,
+                "Choose where to relocate " + defender.Name + ".",
+                "",
+                false, true, defender,
+                "Don't reposition");
+        if (moveTo is null)
+            return;
+        await defender.MoveTo(moveTo, null,
+            new MovementStyle()
+            {
+                ForcedMovement = true,
+                Shifting = true,
+                ShortestPath = true,
+                MaximumSquares = 100,
             });
     }
 
@@ -984,7 +994,7 @@ public abstract partial class Commander
         };
     }
 
-    private static QEffect DrilledReactionsExpended(Creature caster)
+    internal static QEffect DrilledReactionsExpended(Creature caster)
     {
         return new QEffect("Drilled Reactions Expended", "Drilled Reactions has already been used.",
             ExpirationCondition.ExpiresAtStartOfSourcesTurn, caster, MIllustrations.Toggle)
@@ -993,7 +1003,7 @@ public abstract partial class Commander
         };
     }
 
-    private static QEffect RespondedToTactic(Creature caster)
+    internal static QEffect RespondedToTactic(Creature caster)
     {
         return new QEffect("Responded to Tactic", "You have responded to a Commander Tactic this round.",
             ExpirationCondition.ExpiresAtStartOfSourcesTurn, caster, MIllustrations.PincerAttack)
@@ -1002,7 +1012,7 @@ public abstract partial class Commander
         };
     }
 
-    private static QEffect AnimalReaction(Creature owner)
+    internal static QEffect AnimalReaction(Creature owner)
     {
         return new QEffect("Trained Reaction",
                 "Your companion has a reaction it can only use in response to your tactics. This reaction is lost if not used by the end of your turn.",
@@ -1153,6 +1163,7 @@ public abstract partial class Commander
     {
         List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
         EmanationTarget emanationTarget = Target.Emanation(100);
+        emanationTarget.WithBypassesWalls();
         emanationTarget.WithAdditionalRequirementOnCaster(self =>
             squadmates.Any(cr => new TacticResponseRequirement().Satisfied(self, cr))
                 ? Usability.Usable
@@ -1168,6 +1179,16 @@ public abstract partial class Commander
                     ? Usability.Usable
                     : Usability.NotUsable("There must be at least one squadmate who can respond to a tactic."))
             .WithIncludeOnlyIf((_, cr) => IsSquadmate(owner, cr) && new InBannerAuraRequirement().Satisfied(owner, cr));
+    }
+    
+    public static Target AllSquadmateWithReactionTarget(Creature owner)
+    {
+        List<Creature> squadmates = owner.Battle.AllCreatures.Where(cr => IsSquadmate(owner, cr)).ToList();
+        return Target.Emanation(100).WithAdditionalRequirementOnCaster(self =>
+                squadmates.Any(cr => new TacticResponseRequirement().Satisfied(self, cr) && new ReactionRequirement().Satisfied(self, cr))
+                    ? Usability.Usable
+                    : Usability.NotUsable("There must be at least one squadmate who can respond to a tactic."))
+            .WithIncludeOnlyIf((_, cr) => IsSquadmate(owner, cr));
     }
 
     internal static bool IsSquadmate(Creature commander, Creature squadmate)
@@ -1258,7 +1279,7 @@ public abstract partial class Commander
         return false;
     }
 
-    internal static bool CanTakeReaction(bool useDrilledReactions, Creature target, List<Creature?> drilledTargets, Creature caster)
+    internal static bool CanTakeReaction(bool useDrilledReactions, Creature target, List<Creature> drilledTargets, Creature caster)
     {
         if (target.HasEffect(QEffectId.CannotTakeReactions)) return false;
         return (useDrilledReactions && IsDrilledTarget(drilledTargets, target)) ||
@@ -1271,20 +1292,58 @@ public abstract partial class Commander
                target.Actions.CanTakeReaction() || AnimalReactionAvailable(caster, target);
     }
 
-    internal static bool IsDrilledTarget(List<Creature?> drilledTargets, Creature target)
+    internal static bool IsDrilledTarget(List<Creature> drilledTargets, Creature target)
     {
         return drilledTargets.Count > 0 && drilledTargets.Any(cr => cr == target);
     }
 
     internal static bool UseDrilledReactions(Creature caster)
     {
-        return caster.HasFeat(MFeatNames.DrilledReflexes) ? caster.QEffects.Count(qEffect => qEffect.Id == MQEffectIds.ExpendedDrilled) < 2 : caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+        return caster.HasEffect(MQEffectIds.DrilledReflexes) ? caster.QEffects.Count(qEffect => qEffect.Id == MQEffectIds.ExpendedDrilled) < 2 : caster.QEffects.All(qEffect => qEffect.Id != MQEffectIds.ExpendedDrilled);
+    }
+
+    internal static bool CanCastDamageCantrip(Creature target)
+    {
+        return target.Spellcasting?.Sources.Any(list => list.Cantrips.Any(SpellDealsDamage)) ?? false;
     }
 
     internal static void RemoveDrilledExpended(Creature caster)
     {
         QEffect? expended = caster.QEffects.FirstOrDefault(qf => qf.Id == MQEffectIds.ExpendedDrilled);
         if (expended != null) expended.ExpiresAt = ExpirationCondition.Immediately;
+    }
+    //Creates a Floodfill for all tiles adjacent to an ENEMY creature for a TARGET creature to move to using MOVEACTION and adds the action to TILEOPTIONS.
+    internal static void FloodfillAdjacent(Creature target, Creature enemy, CombatAction? moveAction, List<Option> tileOptions)
+    {
+        List<Tile> floodFill = Pathfinding.Floodfill(target, target.Battle, new PathfindingDescription()
+            {
+                Squares = target.Speed,
+                Style =
+                {
+                    PermitsStep = false
+                }
+            })
+            .Where(tile =>
+                (tile.LooksFreeTo(target) || tile.Equals(target.Occupies)) && enemy.Space.Tiles.Any(t => t.IsAdjacentTo(tile) ||
+                    (!target.Space.IsSingleSquare && tile.TilesToTheBottomRight(target.Space.SizeInSquares)
+                        .Any(t2 => t2.IsAdjacentTo(t)))))
+            .ToList();
+        if (floodFill.Count == 0)
+        {
+            floodFill = Pathfinding.Floodfill(target, target.Battle, new PathfindingDescription()
+                {
+                    Squares = 100
+                })
+                .Where(tile =>
+                    tile.LooksFreeTo(target) && enemy.Space.Tiles.Any(t => t.IsAdjacentTo(tile) || (!target.Space.IsSingleSquare && tile.TilesToTheBottomRight(target.Space.SizeInSquares)
+                        .Any(t2 => t2.IsAdjacentTo(t)))))
+                .ToList();
+        }
+        floodFill.ForEach(tile =>
+        {
+            if (moveAction == null || !(bool)moveAction.Target.CanBeginToUse(target)) return;
+            tileOptions.Add(moveAction.CreateUseOptionOn(tile).WithIllustration(moveAction.Illustration));
+        });
     }
     #endregion
 
@@ -1427,6 +1486,43 @@ public abstract partial class Commander
                 return Usability.Usable;
             }
             return Usability.NotUsableOnThisCreature("There are no other squadmates within the banner's aura.");
+        }
+    }
+    public class CanTargetMakeRangedAttackOrCastCantrip : CreatureTargetingRequirement
+    {
+        public override Usability Satisfied(Creature source, Creature target)
+        {
+            bool cantrip = target.Spellcasting?.Sources.Any(list => list.Cantrips.Any(sp => SpellDealsDamage(sp) && sp.Target is CreatureTarget)) ?? false;
+            bool rangedWeapon = target.Weapons.Any(wp => (wp.HasTrait(Trait.Ranged) ||
+                                                          (wp.WeaponProperties?.Throwable ?? false))&&
+                                                         (StrikeRules.CreateStrike(target, wp, RangeKind.Ranged, -1,
+                                                                 wp.WeaponProperties?.Throwable ?? false)
+                                                             .WithActionCost(0).CanBeginToUse(target) || wp.EphemeralItemProperties.NeedsReload));
+            return !cantrip && !rangedWeapon ? Usability.NotUsableOnThisCreature(target.Name + " cannot make a ranged strike or cast a damaging cantrip.") : Usability.Usable;
+        }
+    }
+
+    public class OncePerEncounterRequirement(QEffectId qfId) : CreatureTargetingRequirement
+    {
+        public override Usability Satisfied(Creature source, Creature target)
+        {
+            return source.HasEffect(qfId) ? Usability.NotUsable("This action can only be used once per encounter.") : Usability.Usable; 
+        }
+    }
+
+    public class CanRaiseOrCastShieldRequirement : CreatureTargetingRequirement
+    {
+        public override Usability Satisfied(Creature source, Creature target)
+        {
+            bool canRaise = source.Possibilities.Filter(ap =>
+            {
+                if (ap.CombatAction.ActionId != ActionId.RaiseShield && ap.CombatAction.SpellId != SpellId.Shield)
+                    return false;
+                ap.CombatAction.ActionCost = 0;
+                ap.RecalculateUsability();
+                return true;
+            }).CreateActions(true).Count != 0;
+            return !canRaise ? Usability.NotUsable("You cannot raise a shield or cast the shield cantrip.") : Usability.Usable;
         }
     }
 

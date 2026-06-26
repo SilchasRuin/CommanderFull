@@ -9,14 +9,13 @@ using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Core.Tiles;
 using Dawnsbury.Display.Illustrations;
 using Dawnsbury.Modding;
-using Microsoft.Xna.Framework.Audio;
 
 namespace CommanderFull;
 
 public abstract class ModData
 {
-    public static bool Dawnni = ModManager.TryParse("DawnniEx", out Trait _);
-    public static bool LoreWeak = ModManager.TryParse("LoresAndWeaknesses.Lore", out Trait _);
+    public static readonly bool Dawnni = ModManager.TryParse("DawnniEx", out Trait _);
+    public static readonly bool LoreWeak = ModManager.TryParse("LoresAndWeaknesses.Lore", out Trait _);
     public abstract class MTraits
     {
         public static readonly Trait Commander = ModManager.RegisterTrait("Commander", new TraitProperties("Commander", true) { IsClassTrait = true });
@@ -72,8 +71,9 @@ public abstract class ModData
         public static readonly FeatName TacticalExcellence4 = ModManager.RegisterFeatName("TacticalExcellence4", "Tactical Excellence - 4");
         public static readonly FeatName TacticalExcellence8 = ModManager.RegisterFeatName("TacticalExcellence8", "Tactical Excellence - 8");
         public static readonly FeatName DrilledReflexes = ModManager.RegisterFeatName("FC_DrilledReflexes", "Drilled Reflexes");
+        public static readonly FeatName TargetingStrike =  ModManager.RegisterFeatName("FC_TargetingStrike", "Targeting Strike");
         #endregion
-        #region tactics
+        #region Tactics
         public static readonly FeatName GatherToMe = ModManager.RegisterFeatName("FC_GatherToMe", "Gather to Me!");
         public static readonly FeatName PincerAttack = ModManager.RegisterFeatName("FC_PincerAttack", "Pincer Attack");
         public static readonly FeatName StrikeHard = ModManager.RegisterFeatName("FC_StrikeHard", "Strike Hard!");
@@ -93,6 +93,12 @@ public abstract class ModData
         public static readonly FeatName SlipAndSizzle = ModManager.RegisterFeatName("FC_SlipAndSizzle", "Slip and Sizzle");
         public static readonly FeatName AlleyOop = ModManager.RegisterFeatName("FC_AlleyOop", "Alley-oop");
         public static readonly FeatName TakeTheHighGround = ModManager.RegisterFeatName("FC_TakeTheHighGround", "Take the High Ground");
+        public static readonly FeatName RoaringCharge = ModManager.RegisterFeatName("FC_RoaringCharge", "Roaring Charge");
+        public static readonly FeatName PiranhaAssault = ModManager.RegisterFeatName("FC_PiranhaAssault", "Piranha Assault");
+        public static readonly FeatName PopDropLock = ModManager.RegisterFeatName("FC_PopDropLock", "Pop, Drop, and Lock");
+        public static readonly FeatName ReadyAimFire = ModManager.RegisterFeatName("FC_ReadyAimFire", "Ready, Aim, Fire!");
+        public static readonly FeatName TheBiggerTheyAre = ModManager.RegisterFeatName("FC_TheBiggerTheyAre", "The Bigger They Are");
+        public static readonly FeatName MirroredWall = ModManager.RegisterFeatName("FC_MirroredWall", "Mirrored Wall");
         #endregion
     }
 
@@ -125,7 +131,20 @@ public abstract class ModData
         public static QEffectId VisualTactics { get; } = ModManager.RegisterEnumMember<QEffectId>("VisualTactics");
         public static QEffectId MagicalBanner { get; } =  ModManager.RegisterEnumMember<QEffectId>("MagicalBanner");
         public static QEffectId WarfareExpertise { get; } = ModManager.RegisterEnumMember<QEffectId>("WarfareExpertise");
-        
+        public static QEffectId RoaringCharged { get; } = ModManager.RegisterEnumMember<QEffectId>("RoaringCharged");
+        public static QEffectId TargetingStrike { get; } = ModManager.RegisterEnumMember<QEffectId>("TargetingStrike");
+        public static QEffectId FortunateBlow { get; } = ModManager.RegisterEnumMember<QEffectId>("FortunateBlow");
+        public static QEffectId PerfectedEvaluations { get; } = ModManager.RegisterEnumMember<QEffectId>("PerfectedEvaluations");
+        public static QEffectId UnrivaledAnalysis { get; } = ModManager.RegisterEnumMember<QEffectId>("UnrivaledAnalysis");
+        public static QEffectId ContactWithTheEnemy { get; } = ModManager.RegisterEnumMember<QEffectId>("ContactWithTheEnemy");
+        public static QEffectId QuickeningBanner { get; } = ModManager.RegisterEnumMember<QEffectId>("QuickeningBanner");
+        public static QEffectId PiranhaAssaultUsed { get; } = ModManager.RegisterEnumMember<QEffectId>("PiranhaAssaultUsed");
+        public static QEffectId PoppedDroppedLocked { get; } = ModManager.RegisterEnumMember<QEffectId>("PoppedDroppedLocked");
+        public static QEffectId ReadyAimFire { get; } = ModManager.RegisterEnumMember<QEffectId>("ReadyAimFire");
+        public static QEffectId TheBiggerTheyAre { get; } = ModManager.RegisterEnumMember<QEffectId>("TheBiggerTheyAre");
+        public static QEffectId MirroredWall { get; } = ModManager.RegisterEnumMember<QEffectId>("MirroredWall");
+        public static QEffectId DrilledReflexes { get; } = ModManager.RegisterEnumMember<QEffectId>("DrilledReflexes");
+
     }
     public abstract class MTileQEffectIds
     {
@@ -137,6 +156,7 @@ public abstract class ModData
         public static readonly PossibilitySectionId MobilityTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("MobilityTactics");
         public static readonly PossibilitySectionId OffensiveTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("OffensiveTactics");
         public static readonly PossibilitySectionId ExpertTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("ExpertTactics");
+        public static readonly PossibilitySectionId MasterTactics =  ModManager.RegisterEnumMember<PossibilitySectionId>("MasterTactics");
         public static readonly PossibilitySectionId AuditoryTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("AuditoryTactics");
         public static readonly PossibilitySectionId VisualTactics = ModManager.RegisterEnumMember<PossibilitySectionId>("VisualTactics");
     }
@@ -195,6 +215,10 @@ public abstract class ModData
         public static readonly Illustration BlazingBanner = new ModdedIllustration("FCAssets/BlazingBanner.png");
         public static readonly Illustration KnavesStandard = new ModdedIllustration("FCAssets/KnavesStandard.png");
         public static readonly Illustration VandalsBanner = new ModdedIllustration("FCAssets/VandalsBanner.png");
+        public static Illustration CreateIllustration(string name)
+        {
+            return new ModdedIllustration("FCAssets/" + name + ".png");
+        }
     }
 
     public abstract class MItemGroups

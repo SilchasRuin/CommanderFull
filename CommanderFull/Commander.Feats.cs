@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 using Dawnsbury.Audio;
 using Dawnsbury.Campaign.Encounters.Tutorial;
 using Dawnsbury.Campaign.Path;
@@ -16,18 +13,23 @@ using Dawnsbury.Core.CharacterBuilder.FeatsDb.TrueFeatDb;
 using Dawnsbury.Core.CharacterBuilder.Selections.Options;
 using Dawnsbury.Core.CombatActions;
 using Dawnsbury.Core.Coroutines.Options;
+using Dawnsbury.Core.Coroutines.Options.Reactive;
 using Dawnsbury.Core.Creatures;
 using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Core;
+using Dawnsbury.Core.Mechanics.Damage;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Rules;
 using Dawnsbury.Core.Mechanics.Targeting;
 using Dawnsbury.Core.Mechanics.Targeting.Targets;
 using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
+using Dawnsbury.Core.Roller;
 using Dawnsbury.Core.Tiles;
 using Dawnsbury.Display;
+using Dawnsbury.Display.Controls.Statblocks;
 using Dawnsbury.Display.Illustrations;
+using Dawnsbury.Display.Text;
 using Dawnsbury.Modding;
 using Dawnsbury.ThirdParty.SteamApi;
 using Microsoft.Xna.Framework;
@@ -60,7 +62,7 @@ public abstract partial class Commander
                 });
             })
             .WithPrerequisite(sheet =>
-                    sheet.Tags.TryGetValue("PreparedTactics", out var value) && value is not null && (int)value >= 3,
+                    sheet.Tags.TryGetValue("PreparedTactics", out object? value) && value is not null && (int)value >= 3,
                 "You must be able to select at least 3 tactics.");
         yield return new TrueFeat(MFeatNames.CommandersCompanion, 1,
                 "You gain the service of a young animal companion.",
@@ -75,7 +77,7 @@ public abstract partial class Commander
             })
             .WithPermanentQEffect(null, qf =>
             {
-                qf.AfterYouTakeAction = (_, action) =>
+                qf.AfterYouTakeAction = async (_, action) =>
                 {
                     Creature owner = qf.Owner;
                     Creature? companion =
@@ -84,8 +86,6 @@ public abstract partial class Commander
                     {
                         companion.AddQEffect(AnimalReaction(owner));
                     }
-
-                    return Task.CompletedTask;
                 };
             });
         yield return new TrueFeat(MFeatNames.DeceptiveTactics, 1,
@@ -94,13 +94,12 @@ public abstract partial class Commander
                 [MTraits.Commander])
             .WithPermanentQEffect(qf =>
             {
-                qf.YouBeginAction = (_, action) =>
+                qf.ModifyActionPossibility = (_, action) =>
                 {
                     if (action.ActionId is ActionId.Feint && action.ActiveRollSpecification != null)
                         action.WithActiveRollSpecification(new ActiveRollSpecification(
                             TaggedChecks.SkillCheck(Skill.Deception, WarfareLore),
                             TaggedChecks.DefenseDC(Defense.Perception)));
-                    return Task.CompletedTask;
                 };
                 qf.ProvideActionIntoPossibilitySection = (_, section) =>
                 {
@@ -109,7 +108,7 @@ public abstract partial class Commander
                     return new ActionPossibility(CombatManeuverPossibilities.CreateFeintAction(qf.Owner));
                 };
             }).WithPrerequisite(sheet =>
-                    sheet.Tags.TryGetValue("PreparedTactics", out var value) && value is not null && (int)value >= 3,
+                    sheet.Tags.TryGetValue("PreparedTactics", out object? value) && value is not null && (int)value >= 3,
                 "You must be able to select at least 3 tactics.");
         if (Dawnni && !LoreWeak)
         {
@@ -299,7 +298,8 @@ public abstract partial class Commander
             yield return new TrueFeat(MFeatNames.UnrivaledAnalysis, 8,
                 "Your experience allows you to derive even more information about your opponents from a mere glance.",
                 "When you use Rapid Assessment, you can attempt up to four checks to Recall Knowledge about creatures you are observing.",
-                [MTraits.Commander]).WithPrerequisite(MFeatNames.RapidAssessment, "Rapid Assessment");
+                [MTraits.Commander]).WithPrerequisite(MFeatNames.RapidAssessment, "Rapid Assessment")
+                .WithPermanentQEffectAndSameRulesText(qf => qf.Id = MQEffectIds.UnrivaledAnalysis);
         }
 
         TrueFeat drilledReflexes = new(MFeatNames.DrilledReflexes, 10, "You leave a lasting impression on your squadmates that makes them particularly adept at following your commands.",
@@ -307,6 +307,40 @@ public abstract partial class Commander
             [MTraits.Commander]);
         DrilledReactionsLogic(drilledReflexes);
         yield return drilledReflexes;
+        
+        TrueFeat standardBearersSacrifice = new(ModManager.RegisterFeatName("FC_StandardBearer", "Standard-Bearer's Sacrifice"), 10,
+            "Seeing an enemy take aim at your ally, you bravely flourish your banner to redirect their attention to you.",
+            "When an enemy targets an ally with a ranged attack while you can see both of them and you are in range of the attack, you can attempt to redirect the attack to yourself. The triggering enemy must attempt a Will save against your class DC." +
+            S.FourDegreesOfSuccess(null, "The enemy completes its attack against your ally", "The enemy targets you with the triggering attack instead.", "As failure, and you gain a +2 circumstance bonus to your AC against the triggering attack."),
+            [MTraits.Commander, MTraits.Brandish, Trait.Manipulate, Trait.Visual]);
+        StandardBearerSacrificeLogic(standardBearersSacrifice);
+        yield return standardBearersSacrifice;
+        
+        TrueFeat battleHardenedCompanion = new(MFeatNames.BattleHardenedCompanion, 10,
+            "Accompanying you across countless battlefields has allowed your companion to unleash its full potential.",
+            "The companion you gained with Commander's Companion is now a nimble or savage animal companion. Your animal companion is more readily responsive to your will. During an encounter, even if you don't use the Command an Animal action, your animal companion can still use 1 action that round on your turn to Stride or Strike. If it does, it also gains a reaction it can use to respond to your tactics, but that's all the actions it gets that round—you can't Command it later.",
+            [MTraits.Commander], AllFeats.GetFeatByFeatName(FeatName.IncredibleCompanionDruid).Subfeats);
+        BattleHardenedCompanionLogic(battleHardenedCompanion);
+        yield return battleHardenedCompanion;
+
+        TrueFeat targetingStrike = new(MFeatNames.TargetingStrike, 10,
+            "Your attack creates an opening in your target's defenses for your allies to capitalize on.",
+            "When you successfully damage an opponent with either Guiding Shot or Set-Up Strike, the next creature other than you to attack the same target before the start of your next turn deals an amount of additional precision damage equal to your Intelligence modifier.",
+            [MTraits.Commander]);
+        TargetingStrikeLogic(targetingStrike);
+        yield return targetingStrike;
+
+        TrueFeat fortunateBlow = new(ModManager.RegisterFeatName("FC_FortunateBlow", "Fortunate Blow"), 12,
+            "You set an enemy up for a devastating follow-through from your allies.",
+            "When you successfully damage an opponent with either Guiding Shot or Set-Up Strike, the next creature other than you to attack the same target before the start of your next turn rolls twice on their attack roll and takes the higher result.",
+            [MTraits.Commander, Trait.Fortune]);
+        FortunateBlowLogic(fortunateBlow);
+        yield return fortunateBlow;
+
+        foreach (Feat feat in HighLevelFeats.Load())
+        {
+            yield return feat;
+        }
     }
 
     internal static void LoadGenericFeats()
@@ -316,7 +350,7 @@ public abstract partial class Commander
         if (warden.Prerequisites.Count == 0) return;
         warden.Prerequisites.RemoveAll(req =>
             req.Description.Contains("must have Shield Ally") || req.Description.Contains("must be a Fighter"));
-        warden.WithPrerequisite(
+        warden.WithPrerequisite( 
             values => values.HasFeat(FeatName.Fighter) || values.HasFeat(MFeatNames.Commander) ||
                       values.HasFeat(Dawnsbury.Core.CharacterBuilder.FeatsDb.Champion.Champion
                           .ShieldAllyFeatName),
@@ -683,7 +717,9 @@ public abstract partial class Commander
                         Dictionary<string, object?> tags = calculated.Tags.Where(pair =>
                                 pair.Value is List<Trait> list &&
                                 (list.Contains(MTraits.BasicTactic) ||
-                                 list.Contains(MTraits.ExpertTactic)))
+                                 list.Contains(MTraits.ExpertTactic) ||
+                                 (self.HasEffect(MQEffectIds.ContactWithTheEnemy) && (list.Contains(MTraits.MasterTactic) || list.Contains(MTraits.LegendaryTactic)))
+                                 ))
                             .ToDictionary();
                         preparedTactics.AddRange(tags.Keys);
                         potentialTactics.AddRange(calculated.AllFeatGrants
@@ -727,20 +763,18 @@ public abstract partial class Commander
                 Creature self = qf.Owner;
                 qf.AddGrantingOfTechnical(cr => cr.EnemyOf(self), qfTech =>
                 {
-                    qfTech.YouBeginAction = async (_, action) =>
+                    qfTech.YouBeginActionReaction = (_, action) =>
                     {
-                        if (!action.HasTrait(Trait.Attack) || action.ChosenTargets.ChosenCreatures.Count != 1) return;
+                        if (!action.HasTrait(Trait.Attack) || action.ChosenTargets.ChosenCreatures.Count != 1) return null;
                         if (action.ChosenTargets.ChosenCreature is { } ally && ally.FriendOfAndNotSelf(self) &&
                             ally.IsAdjacentTo(self) && CommonCombatActions.StepByStepStride(ally).WithActionCost(0)
                                 .CanBeginToUse(ally) &&
                             CommonCombatActions.StepByStepStride(self).WithActionCost(0).CanBeginToUse(self)
                             && !self.HasEffect(QEffectId.Immobilized) && !ally.HasEffect(QEffectId.Immobilized))
                         {
-                            bool confirm = await self.AskToUseReaction(
-                                "Do you wish to use a reaction to swap positions with {Green}" + ally.Name +
-                                "{/Green} and become the target of {b}" + action.Name + "{/b} from {Red}" +
-                                action.Owner + "{/Red}.");
-                            if (confirm)
+                            ReactionOption allySwap = ReactionOption.CreateCustom("Defensive Swap",  "Use a reaction to swap positions with {Green}" + ally.Name +
+                            "{/Green} and become the target of {b}" + action.Name + "{/b} from {Red}" +
+                                action.Owner + "{/Red}.", null, self, async () => 
                             {
                                 Tile selfStart = self.Occupies;
                                 Tile allyStart = ally.Occupies;
@@ -752,22 +786,22 @@ public abstract partial class Commander
                                 self.Overhead("Defensive Swap", Color.Black, self + " uses {b}Defensive Swap{/b}",
                                     "Defensive Swap {icon:Reaction}", qf.Description,
                                     new Traits([MTraits.Commander]));
-                            }
+                            });
+                            return allySwap.WithIsReaction();
                         }
 
-                        if (action.ChosenTargets.ChosenCreature == self &&
-                            CommonCombatActions.StepByStepStride(self).WithActionCost(0).CanBeginToUse(self)
-                            && self.Battle.AllCreatures.Any(friend => friend.FriendOfAndNotSelf(self) &&
-                                                                      friend.IsAdjacentTo(self) && CommonCombatActions
-                                                                          .StepByStepStride(friend).WithActionCost(0)
-                                                                          .CanBeginToUse(friend) &&
-                                                                      !friend.HasEffect(QEffectId.Immobilized))
-                            && !self.HasEffect(QEffectId.Immobilized))
-                        {
-                            bool confirm = await self.AskToUseReaction(
-                                "Do you wish to use a reaction to swap positions with an adjacent ally and cause them to become the target of {b}" +
-                                action.Name + "{/b} from {Red}" + action.Owner + "{/Red}.");
-                            if (confirm)
+                        if (action.ChosenTargets.ChosenCreature != self ||
+                            !CommonCombatActions.StepByStepStride(self).WithActionCost(0).CanBeginToUse(self)
+                            || !self.Battle.AllCreatures.Any(friend => friend.FriendOfAndNotSelf(self) &&
+                                                                       friend.IsAdjacentTo(self) && CommonCombatActions
+                                                                           .StepByStepStride(friend).WithActionCost(0)
+                                                                           .CanBeginToUse(friend) &&
+                                                                       !friend.HasEffect(QEffectId.Immobilized))
+                            || self.HasEffect(QEffectId.Immobilized)) return null;
+                        ReactionOption selfSwap = ReactionOption.CreateCustom("Defensive Swap",
+                            "Use a reaction to swap positions with an adjacent ally and cause them to become the target of {b}" +
+                            action.Name + "{/b} from {Red}" + action.Owner + "{/Red}.",
+                            null, self, async () =>
                             {
                                 Creature? friend = null;
                                 IEnumerable<Creature?> allies = self.Battle.AllCreatures.Where(creature =>
@@ -779,7 +813,8 @@ public abstract partial class Commander
                                 friend = enumerable.ToList().Count switch
                                 {
                                     1 => enumerable.FirstOrDefault(),
-                                    > 1 => await self.Battle.AskToChooseACreature(self, enumerable!, self.Illustration,
+                                    > 1 => await self.Battle.AskToChooseACreature(self, enumerable!,
+                                        self.Illustration,
                                         "Choose an adjacent ally to swap with", "ally", "pass"),
                                     _ => friend
                                 };
@@ -787,12 +822,17 @@ public abstract partial class Commander
                                 {
                                     Tile selfStart = self.Occupies;
                                     Tile allyStart = friend.Occupies;
-                                    await self.SingleTileMove(allyStart, null, new MovementStyle(){Shifting = true});
-                                    await friend.SingleTileMove(selfStart, null, new MovementStyle(){Shifting = true});
-                                    await self.SingleTileMove(allyStart, null, new MovementStyle(){Shifting = true});
-                                    await friend.SingleTileMove(selfStart, null, new MovementStyle(){Shifting = true});
+                                    await self.SingleTileMove(allyStart, null,
+                                        new MovementStyle() { Shifting = true });
+                                    await friend.SingleTileMove(selfStart, null,
+                                        new MovementStyle() { Shifting = true });
+                                    await self.SingleTileMove(allyStart, null,
+                                        new MovementStyle() { Shifting = true });
+                                    await friend.SingleTileMove(selfStart, null,
+                                        new MovementStyle() { Shifting = true });
                                     action.ChosenTargets = ChosenTargets.CreateSingleTarget(friend);
-                                    self.Overhead("Defensive Swap", Color.Black, self + " uses {b}Defensive Swap{/b}",
+                                    self.Overhead("Defensive Swap", Color.Black,
+                                        self + " uses {b}Defensive Swap{/b}",
                                         "Defensive Swap {icon:Reaction}", qf.Description,
                                         new Traits([MTraits.Commander]));
                                 }
@@ -800,8 +840,8 @@ public abstract partial class Commander
                                 {
                                     self.Actions.RefundReaction();
                                 }
-                            }
-                        }
+                            });
+                        return selfSwap.WithIsReaction();
                     };
                 });
             });
@@ -818,21 +858,46 @@ public abstract partial class Commander
                 guidingShot.Illustration = new SideBySideIllustration(item.Illustration, IllustrationName.TrueStrike);
                 guidingShot.Traits.Add(Trait.Flourish);
                 guidingShot.Traits.Add(MTraits.Commander);
-                guidingShot.WithEffectOnEachTarget((shot, caster, target, result) =>
+                guidingShot.WithPrologueEffectOnChosenTargetsBeforeRolls(async (action, caster, targets) =>
+                {
+                    if (!caster.HasEffect(MQEffectIds.TargetingStrike) && !caster.HasEffect(MQEffectIds.FortunateBlow))
+                        return;
+                    Creature? target = targets.ChosenCreature;
+                    if (target == null)
+                        return;
+                    target.AddQEffect(new QEffect(ExpirationCondition.ExpiresAtEndOfAnyTurn)
+                    {
+                        AfterYouTakeDamage = async (qeffect, amount, _, combatAction, _) =>
+                        {
+                            if (combatAction != action)
+                                return;
+                            if (amount <= 0)
+                            {
+                                qeffect.ExpiresAt = ExpirationCondition.Immediately;
+                                return;
+                            }
+                            if (caster.HasEffect(MQEffectIds.TargetingStrike))
+                                target.AddQEffect(TargetingStrike(caster));
+                            if (caster.HasEffect(MQEffectIds.FortunateBlow))
+                                target.AddQEffect(FortunateBlow(caster));
+                            qeffect.ExpiresAt = ExpirationCondition.Immediately;
+                        }
+                    });
+                });
+                guidingShot.WithEffectOnEachTarget(async (shot, caster, target, result) =>
                 {
                     int amount = result == CheckResult.CriticalSuccess ? 2 : 1;
-                    if (result < CheckResult.Success) return Task.CompletedTask;
+                    if (result < CheckResult.Success) return;
                     QEffect guide = new("Guiding Shot",
                         "The next attack made against this creature by anyone other than " + self.Name +
                         " will have a +" + amount + " circumstance bonus to hit.",
                         ExpirationCondition.ExpiresAtStartOfSourcesTurn, self, IllustrationName.TrueStrike)
                     {
-                        AfterYouAreTargeted = (effect, action) =>
+                        AfterYouAreTargeted = async (effect, action) =>
                         {
                             if (!action.HasTrait(Trait.Attack) || action == shot || action.Owner == caster)
-                                return Task.CompletedTask;
+                                return;
                             effect.ExpiresAt = ExpirationCondition.Immediately;
-                            return Task.CompletedTask;
                         },
                     };
                     guide.AddGrantingOfTechnical(cr => cr != caster, qfTech =>
@@ -844,7 +909,6 @@ public abstract partial class Commander
                         };
                     });
                     target.AddQEffect(guide);
-                    return Task.CompletedTask;
                 });
                 guidingShot.Name = "Guiding Shot";
                 guidingShot.Description = StrikeRules.CreateBasicStrikeDescription4(guidingShot.StrikeModifiers,
@@ -867,19 +931,44 @@ public abstract partial class Commander
                     new SideBySideIllustration(item.Illustration, IllustrationName.BigFlatfooted);
                 setupStrike.Traits.Add(Trait.Flourish);
                 setupStrike.Traits.Add(MTraits.Commander);
-                setupStrike.WithEffectOnEachTarget((strike, caster, target, result) =>
+                setupStrike.WithPrologueEffectOnChosenTargetsBeforeRolls(async (action, caster, targets) =>
                 {
-                    if (result < CheckResult.Success) return Task.CompletedTask;
+                    if (!caster.HasEffect(MQEffectIds.TargetingStrike) && !caster.HasEffect(MQEffectIds.FortunateBlow))
+                        return;
+                    Creature? target = targets.ChosenCreature;
+                    if (target == null)
+                        return;
+                    target.AddQEffect(new QEffect(ExpirationCondition.ExpiresAtEndOfAnyTurn)
+                    {
+                        AfterYouTakeDamage = async (qeffect, amount, _, combatAction, _) =>
+                        {
+                            if (combatAction != action)
+                                return;
+                            if (amount <= 0)
+                            {
+                                qeffect.ExpiresAt = ExpirationCondition.Immediately;
+                                return;
+                            }
+                            if (caster.HasEffect(MQEffectIds.TargetingStrike))
+                                target.AddQEffect(TargetingStrike(caster));
+                            if (caster.HasEffect(MQEffectIds.FortunateBlow))
+                                target.AddQEffect(FortunateBlow(caster));
+                            qeffect.ExpiresAt = ExpirationCondition.Immediately;
+                        }
+                    });
+                });
+                setupStrike.WithEffectOnEachTarget(async (strike, caster, target, result) =>
+                {
+                    if (result < CheckResult.Success) return;
                     QEffect setup = new("Set-up Strike",
                         "This creature will be off guard against the next attack made by allies of " + caster.Name +
                         ".", ExpirationCondition.ExpiresAtStartOfSourcesTurn, self, IllustrationName.Flatfooted)
                     {
-                        AfterYouAreTargeted = (effect, action) =>
+                        AfterYouAreTargeted = async (effect, action) =>
                         {
                             if (!action.HasTrait(Trait.Attack) || action == strike || action.Owner == caster)
-                                return Task.CompletedTask;
+                                return;
                             effect.ExpiresAt = ExpirationCondition.Immediately;
-                            return Task.CompletedTask;
                         },
                         IsFlatFootedTo = (_, creature, _) =>
                         {
@@ -889,7 +978,6 @@ public abstract partial class Commander
                         }
                     };
                     target.AddQEffect(setup);
-                    return Task.CompletedTask;
                 });
                 setupStrike.Name = "Set-up Strike";
                 setupStrike.Description = StrikeRules.CreateBasicStrikeDescription4(setupStrike.StrikeModifiers,
@@ -921,17 +1009,25 @@ public abstract partial class Commander
                             .FirstOrDefault(pw => pw.Action.Name.Contains("Recall Weakness")) is CombatAction
                         investigateAction)
                     {
+                        int recallAmount = self.HasEffect(MQEffectIds.PerfectedEvaluations) ? 6 :
+                            self.HasEffect(MQEffectIds.UnrivaledAnalysis) ? 4 : 1;
                         investigateAction.Name = "Rapid Assessment";
-                        if (self.HasFeat(MFeatNames.UnrivaledAnalysis))
-                        {
-                            if (investigateAction.Target is CreatureTarget original)
-                                investigateAction.Target =
-                                    Target.MultipleCreatureTargets(original, original, original, original)
-                                        .WithMinimumTargets(1).WithMustBeDistinct();
-                            investigateAction.Name = "Rapid Assessment - Unrivaled Analysis";
-                        }
+                        // if (self.HasFeat(MFeatNames.UnrivaledAnalysis))
+                        // {
+                        //     if (investigateAction.Target is CreatureTarget original)
+                        //         investigateAction.Target =
+                        //             Target.MultipleCreatureTargets(original, original, original, original)
+                        //                 .WithMinimumTargets(1).WithMustBeDistinct();
+                        //     investigateAction.Name = "Rapid Assessment - Unrivaled Analysis";
+                        // }
                         if (self.Battle.AllCreatures.Any(cr => cr.EnemyOf(self) && cr.VisibleToHumanPlayer))
-                            await self.Battle.GameLoop.FullCast(investigateAction);
+                        {
+                            for (var index = 0; index < recallAmount; index++)
+                            {
+                                if (!await self.Battle.GameLoop.FullCast(investigateAction))
+                                    break;
+                            }
+                        }
                     }
                 };
             });
@@ -1005,7 +1101,7 @@ public abstract partial class Commander
                                 MTraits.Brandish, MTraits.Commander, Trait.Emotion, Trait.Flourish,
                                 Trait.Mental, Trait.Visual, Trait.Basic
                             ],
-                            "Each ally in your banner's aura reduces their frightened and stupefied conditions by 1, and can make a Will save against a standard level-based DC for your level, and on a success or better remove the Confused or Paralyzed condition. Regardless of the result, any ally that attempts this save is temporarily immune to Banner's Inspiration for 10 minutes.",
+                            "Each ally in your banner's aura reduces their frightened and stupefied conditions by 1, and can make a Will save against a standard level-based DC for your level, and on a success or better remove the Confused or Paralyzed condition. Regardless of the result, any ally that attempts this save is temporarily immune to Banner's Inspiration for the rest of the encounter.",
                             new EmanationTarget(100, false)
                                 .WithAdditionalRequirementOnCaster(cr => new BrandishRequirement().Satisfied(cr, cr))
                                 .WithIncludeOnlyIf((_, creature) =>
@@ -1059,9 +1155,9 @@ public abstract partial class Commander
                     "The enemy takes a –2 circumstance penalty to their Fortitude DC to resist being Grappled, Repositioned, or Shoved and a –2 circumstance penalty to their Reflex DC to resist being Disarmed. Both penalties last until the start of your next turn.");
                 unsteady.Traits.Add(Trait.Flourish);
                 unsteady.Traits.Add(MTraits.Commander);
-                unsteady.WithEffectOnEachTarget((_, caster, target, result) =>
+                unsteady.WithEffectOnEachTarget(async (_, caster, target, result) =>
                 {
-                    if (result <= CheckResult.Failure) return Task.CompletedTask;
+                    if (result <= CheckResult.Failure) return;
                     target.AddQEffect(new QEffect("Unsteadying Strike",
                         "This creature takes a –2 circumstance penalty to their Fortitude DC to resist being Grappled, Repositioned, or Shoved and a –2 circumstance penalty to their Reflex DC to resist being Disarmed.",
                         ExpirationCondition.ExpiresAtStartOfSourcesTurn, caster, IllustrationName.Shove)
@@ -1079,7 +1175,6 @@ public abstract partial class Commander
                             return null;
                         }
                     });
-                    return Task.CompletedTask;
                 });
                 return unsteady;
             };
@@ -1093,10 +1188,10 @@ public abstract partial class Commander
             qf =>
             {
                 Creature self = qf.Owner;
-                qf.AfterYouTakeActionAgainstTarget = (_, action, ally, _) =>
+                qf.AfterYouTakeActionAgainstTarget = async (_, action, ally, _) =>
                 {
                     if (!ally.FriendOfAndNotSelf(self) || !action.Name.Contains("Battle Medicine") || !self.HeldItems.Any(item => item.HasTrait(Trait.Shield)))
-                        return Task.CompletedTask;
+                        return;
                     ally.AddQEffect(new QEffect("Shielded Recovery",
                         "You gain a +1 circumstance bonus to AC and Reflex saves as long as you are adjacent to " +
                         self.Name + ".",
@@ -1112,7 +1207,6 @@ public abstract partial class Commander
                                 effect.ExpiresAt = ExpirationCondition.Immediately;
                         }
                     });
-                    return Task.CompletedTask;
                 };
             });
     }
@@ -1549,21 +1643,6 @@ public abstract partial class Commander
                         }
                     });
                 };
-                // qf.AfterYouTakeAction = (_, action) =>
-                // {
-                //     Creature owner = qf.Owner;
-                //     Creature? companion =
-                //         owner.Battle.AllCreatures.FirstOrDefault(cr => IsMyAnimalCompanion(owner, cr));
-                //     if (companion != null && action.Name == "Act on your own")
-                //     {
-                //         companion.AddQEffect(new QEffect("Trained Reaction",
-                //                 "Your companion has a reaction it can only use in response to your tactics. This reaction is lost if not used by the end of your turn.",
-                //                 ExpirationCondition.ExpiresAtEndOfYourTurn, owner, IllustrationName.Reaction)
-                //             { Id = MQEffectIds.AnimalReaction });
-                //     }
-                //     return Task.CompletedTask;
-                //     
-                // };
             });
     }
 
@@ -1646,7 +1725,7 @@ public abstract partial class Commander
         });
     }
 
-    private static void DrilledReactionsLogic(TrueFeat feat)
+    private static void  DrilledReactionsLogic(TrueFeat feat)
     {
         feat.WithOnSheet(values =>
         {
@@ -1656,8 +1735,171 @@ public abstract partial class Commander
                 .GetField("<MaximumNumberOfOptions>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
             if (maxOptions == null) return;
             maxOptions.SetValue(myOption, 2);
-        });
+        })
+        .WithPermanentQEffect(null,qf => qf.Id = MQEffectIds.DrilledReflexes);
     }
 
+    private static void StandardBearerSacrificeLogic(TrueFeat feat)
+    {
+        feat.WithActionCost(-2)
+            .WithPermanentQEffect("You can attempt to redirect ranged attacks to yourself.", qf =>
+            {
+                Creature self = qf.Owner;
+                qf.AddGrantingOfTechnical(cr => cr.EnemyOf(self) && self.CanSee(cr), qfTech =>
+                {
+                    qfTech.YouBeginActionReaction= (_, action) =>
+                    {
+                        Creature? ally = action.ChosenTargets.ChosenCreature;
+                        Creature enemy = action.Owner;
+                        if (!enemy.EnemyOf(self) || !action.HasTrait(Trait.Ranged) || !action.HasTrait(Trait.Attack) || ally == null || ally == self)
+                            return null;
+                        Target target = action.Target;
+                        if (target is not CreatureTarget creatureTarget || !creatureTarget.IsLegalTarget(enemy, self))
+                            return null;
+                        CreatureTarget sacrificeTarget = Target.Distance(100)
+                            .WithAdditionalConditionOnTargetCreature((cr, oppnt) =>
+                                cr.CanSee(oppnt)
+                                    ? Usability.Usable
+                                    : Usability.NotUsableOnThisCreature("Must be able to see your target."));
+                        CombatAction sacrifice = new CombatAction(self, IllustrationName.None,
+                            "Standard-Bearer's Sacrifice",
+                            [Trait.Manipulate, Trait.Visual, MTraits.Brandish, MTraits.Commander, Trait.DoNotShowInCombatLog, Trait.DoNotShowOverheadOfActionName], "When an enemy targets an ally with a ranged attack while you can see both of them and you are in range of the attack, you can attempt to redirect the attack to yourself. The triggering enemy must attempt a Will save against your class DC." +
+                            S.FourDegreesOfSuccess(null, "The enemy completes its attack against your ally", "The enemy targets you with the triggering attack instead.", "As failure, and you gain a +2 circumstance bonus to your AC against the triggering attack."), sacrificeTarget)
+                            .WithActionCost(0)
+                            .WithSoundEffect(SfxName.ReloadCrossbow)
+                            .WithSavingThrow(new SavingThrow(Defense.Will, self.ClassDC(MTraits.Commander)))
+                            .WithEffectOnEachTarget(async (_, caster, _, result) =>
+                            {
+                                switch (result)
+                                {
+                                    case >= CheckResult.Success:
+                                        return;
+                                    case CheckResult.CriticalFailure:
+                                        caster.AddQEffect(new QEffect(ExpirationCondition.ExpiresAtEndOfAnyTurn)
+                                        {
+                                            BonusToDefenses = (_, combatAction, defense) => defense == Defense.AC && combatAction == action ? new Bonus(2, BonusType.Circumstance, "Standard-Bearer's Sacrifice", true) : null,
+                                        });
+                                        break;
+                                }
+                            });
+                        if (!sacrificeTarget.IsLegalTarget(self, enemy) || !new BrandishRequirement().Satisfied(self, ally))
+                            return null;
+                        string tooltip = CombatActionExecution.BreakdownSavingThrowForTooltip(sacrifice, enemy, sacrifice.SavingThrow!)
+                            .TooltipDescription;
+                        ReactionOption sacrificeOption = ReactionOption.CreateFromCombatActionCustom(sacrifice, $"{enemy} targeted {ally} with {action.Name}, use a reaction to force {enemy} to make a Will save or be forced to target you?",
+                            async () =>
+                            {
+                                if (await self.Battle.GameLoop.FullCast(sacrifice, ChosenTargets.CreateSingleTarget(enemy)) && !sacrifice.Disrupted)
+                                {
+                                    action.ChosenTargets = ChosenTargets.CreateSingleTarget(self);
+                                    self.Overhead(sacrifice.Name, Color.Black, $"{self} uses {{b}}{sacrifice.Name} {{icon:Reaction}}{{/b}}.",
+                                        sacrifice.Name + " {icon:Reaction}",
+                                        sacrifice.Description, sacrifice.Traits);
+                                }
+                                else
+                                {
+                                    self.Overhead(sacrifice.Name, Color.Black,
+                                        $"{self} attempts to use {{b}}{sacrifice.Name} {{icon:Reaction}}{{/b}}, but it was disrupted!",
+                                        sacrifice.Name + " {icon:Reaction}",
+                                        sacrifice.Description, sacrifice.Traits);
+                                }
+                            }).WithIsReaction();
+                        sacrificeOption.ReactingCreature = self;
+                        sacrificeOption.MouseOverStatblock = new StringStatblock("Standard-Bearer's Sacrifice {icon:Reaction}", null,
+                            sacrifice.Traits.ToList(), tooltip, false);
+                        return sacrificeOption;
+                    };
+
+                });
+            });
+    }
+
+    public static void TargetingStrikeLogic(TrueFeat feat)
+    {
+        feat.WithPrerequisite(
+                values => values.HasFeat(MFeatNames.GuidingShot) || values.HasFeat(MFeatNames.SetupStrike),
+                "You must have either the Guiding Shot or Set-up Strike feat.")
+            .WithPermanentQEffectAndSameRulesText(qf => qf.Id = MQEffectIds.TargetingStrike);
+    }
+    public static void FortunateBlowLogic(TrueFeat feat)
+    {
+        feat.WithPrerequisite(
+                values => values.HasFeat(MFeatNames.GuidingShot) || values.HasFeat(MFeatNames.SetupStrike),
+                "You must have either the Guiding Shot or Set-up Strike feat.")
+            .WithPermanentQEffectAndSameRulesText(qf => qf.Id = MQEffectIds.FortunateBlow);
+    }
+
+    public static void BattleHardenedCompanionLogic(TrueFeat feat)
+    {
+        feat.WithPermanentQEffect(null, qf =>
+        {
+            qf.AfterYouTakeAction = async (_, action) =>
+            {
+                Creature owner = qf.Owner;
+                Creature? companion = owner.Battle.AllCreatures.FirstOrDefault(cr => IsMyAnimalCompanion(owner, cr));
+                if (companion != null && action.Name == "Act on your own")
+                {
+                    companion.AddQEffect(new QEffect("Trained Reaction",
+                            "Your companion has a reaction it can only use in response to your tactics. This reaction is lost if not used by the end of your turn.",
+                            ExpirationCondition.ExpiresAtEndOfYourTurn, owner, IllustrationName.Reaction)
+                        { Id = MQEffectIds.AnimalReaction });
+                }
+            };
+        });
+    }
+    public static QEffect TargetingStrike(Creature source)
+    {
+        QEffect qf = new("Targeting Strike",
+            $"The next creature to attack this creature other than {source} deals {source.Abilities.Intelligence} additional precision damage.",
+            ExpirationCondition.ExpiresAtStartOfSourcesTurn, source,
+            MIllustrations.CreateIllustration("Target"))
+        {
+            AfterYouAreTargeted = async (effect, action) =>
+            {
+                if (action.Owner == source || !action.Owner.FriendOf(source) || !action.HasTrait(Trait.Attack))
+                    return;
+                effect.ExpiresAt = ExpirationCondition.Immediately;
+            }
+        };
+        qf.AddGrantingOfTechnical(cr => cr.FriendOfAndNotSelf(source), qfTech =>
+        {
+            qfTech.YourStrikeMayDealPrecisionDamage = (_, _, defender) => defender != qf.Owner ? null : DiceFormula.FromText($"{source.Abilities.Intelligence}", "Targeting Strike");
+            qfTech.YouDealDamageEvent = async (_, damage) =>
+            {
+                if (damage.CombatAction is not { } action || action.HasTrait(Trait.Strike) ||
+                    !action.HasTrait(Trait.Attack) || action.Owner.IsImmuneTo(Trait.PrecisionDamage) || action.ChosenTargets.ChosenCreature != qf.Owner)
+                    return;
+                DamageKind primary = damage.KindedDamages.FirstOrDefault()?.DamageKind ?? DamageKind.Untyped;
+                damage.KindedDamages.Add(new KindedDamage(DiceFormula.FromText($"{source.Abilities.Intelligence}", "Targeting Strike"), primary));
+            };
+        });
+        return qf;
+    }
+
+    public static QEffect FortunateBlow(Creature source)
+    {
+        QEffect qf = new("Fortunate Blow",
+            $"The next creature to attack this creature other than {source} rolls twice on their attack roll and takes the higher result.",
+            ExpirationCondition.ExpiresAtStartOfSourcesTurn, source,
+            IllustrationName.TrueTarget)
+        {
+            AfterYouAreTargeted = async (effect, action) =>
+            {
+                if (action.Owner == source || !action.Owner.FriendOf(source) || !action.HasTrait(Trait.Attack))
+                    return;
+                effect.ExpiresAt = ExpirationCondition.Immediately; 
+            }
+        };
+        qf.AddGrantingOfTechnical(cr => cr.FriendOfAndNotSelf(source), qfTech =>
+        {
+            qfTech.RerollActiveRoll = async (_, _, action, target) =>
+            {
+                if (target != qf.Owner || !action.HasTrait(Trait.Attack))
+                    return RerollDirection.DoNothing;
+                return RerollDirection.RerollAndKeepBest;
+            };
+        });
+        return qf;
+    }
     #endregion
 }

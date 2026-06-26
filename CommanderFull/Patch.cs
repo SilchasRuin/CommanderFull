@@ -7,12 +7,17 @@ using System.Runtime.CompilerServices;
 using Dawnsbury.Audio;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Core.Creatures;
+using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Rules;
+using Dawnsbury.Core.Mechanics.Targeting;
+using Dawnsbury.Core.Mechanics.Targeting.TargetingRequirements;
 using Dawnsbury.Core.Mechanics.Treasure;
+using Dawnsbury.Core.Possibilities;
 using Dawnsbury.Display.Controls;
 using Dawnsbury.ThirdParty.SteamApi;
 using HarmonyLib;
+using static CommanderFull.ModData;
 
 namespace CommanderFull;
 [HarmonyPatch(typeof(Creature), nameof(Creature.RecalculateLandSpeedAndInitiative))]
@@ -58,7 +63,7 @@ internal static class PatchRuneCost
         Item slotItem,
         Action onSuccessfulDetach)
     {
-        if (rune.RuneProperties == null || rune.RuneProperties.RuneKind != ModData.MRuneKinds.MagicalBanner) return true;
+        if (rune.RuneProperties == null || rune.RuneProperties.RuneKind != MRuneKinds.MagicalBanner) return true;
         AltDetach.Detach(itemSlot, onSuccessfulDetach, slotItem, rune);
         return false;
     }
@@ -88,7 +93,7 @@ internal static class PatchRuneAttach
 {
     internal static bool Prefix(Item runestone, Item? equipment, ref RunestoneRules.SubitemAttachmentResult __result)
     {
-        if (runestone.RuneProperties == null || runestone.RuneProperties.RuneKind != ModData.MRuneKinds.MagicalBanner || runestone.RuneProperties.RuneKind != ModData.MRuneKinds.Banner || equipment == null || !equipment.HasTrait(Trait.SpecificMagicWeapon)) return true;
+        if (runestone.RuneProperties == null || runestone.RuneProperties.RuneKind != MRuneKinds.MagicalBanner || runestone.RuneProperties.RuneKind != MRuneKinds.Banner || equipment == null || !equipment.HasTrait(Trait.SpecificMagicWeapon)) return true;
         if (equipment.StoresItem != null) return true;
         RuneProperties rune = runestone.RuneProperties;
         int num1 = equipment.Runes.Count(itm => itm.RuneProperties?.RuneKind == rune.RuneKind);
@@ -118,8 +123,30 @@ internal static class PatchRuneAdd
 {
     internal static bool Prefix(Item runestone, Item equipment)
     {
-        if (runestone.RuneProperties == null || runestone.RuneProperties.RuneKind != ModData.MRuneKinds.MagicalBanner || runestone.RuneProperties.RuneKind != ModData.MRuneKinds.Banner || !equipment.HasTrait(Trait.SpecificMagicWeapon)) return true;
+        if (runestone.RuneProperties == null || runestone.RuneProperties.RuneKind != MRuneKinds.MagicalBanner || runestone.RuneProperties.RuneKind != MRuneKinds.Banner || !equipment.HasTrait(Trait.SpecificMagicWeapon)) return true;
         AltAttach.Attach(runestone, equipment);
+        return false;
+    }
+}
+
+[HarmonyPatch(typeof(TargetMustNotBeTwoSizesAboveYouCreatureTargetingRequirement),
+    nameof(TargetMustNotBeTwoSizesAboveYouCreatureTargetingRequirement.Satisfied))]
+internal static class PatchTargetMustNotBeTwoSizesAboveYouCreatureTargetingRequirement
+{
+    internal static bool Prefix(Creature source, Creature target, ref Usability __result)
+    {
+        if (source.FindQEffect(MQEffectIds.TheBiggerTheyAre) is not {} qEffect || target.HasTrait(Trait.Object))
+            return true;
+        int num = target.Space.SizeCategory - source.Space.SizeCategory;
+        int wrestler = target.HasEffect(QEffectId.TitanWrestlerLegendary) ? 3 :
+            target.HasEffect(QEffectId.TitanWrestler) ? 2 : 1;
+        int num2 = qEffect.Value + wrestler ;
+        if (num2 >= num)
+        {
+            __result = Usability.Usable;
+            return false;
+        }
+        __result = Usability.CommonReasons.TargetTooLarge;
         return false;
     }
 }
@@ -165,6 +192,6 @@ public static class MyConditionPatch
 {
     public static bool ShouldSkip(Creature creature)
     {
-        return creature.HasEffect(ModData.MQEffectIds.ArmorRegiment);
+        return creature.HasEffect(MQEffectIds.ArmorRegiment);
     }
 }

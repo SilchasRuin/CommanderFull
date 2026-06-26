@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using Dawnsbury.Audio;
+﻿using Dawnsbury.Audio;
 using Dawnsbury.Core;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb.Common;
@@ -116,6 +115,10 @@ public abstract partial class Commander
                 "Your ally leaps to secure the high ground with a little help from the squad.",
                 "Signal a squadmate within the aura of your commander’s banner; as a free action, that squadmate can Stride directly toward any other squadmate you are both observing. If the first squadmate ends this movement adjacent to another squadmate, the first squadmate can immediately Leap up to 25 feet as a reaction, boosted by the other squadmate. This distance increases to 40 feet if you have legendary proficiency in Warfare Lore.",
                 [MTraits.Tactic, MTraits.ExpertTactic]).WithActionCost(1).WithIllustration(MIllustrations.TakeTheHighGround);
+        foreach (Feat tactic in MasterTactics.LoadMasterTactics())
+        {
+            yield return tactic;
+        }
     }
 
     private static IEnumerable<QEffect> TacticsQFs(Creature cr)
@@ -199,11 +202,11 @@ public abstract partial class Commander
                 section.PossibilitySectionId == MPossibilitySectionIds.OffensiveTactics
                     ? new ActionPossibility(EndIt(cr))
                     : null,
-            StartOfYourPrimaryTurn = (effect, _) =>
+            StartOfYourPrimaryTurn = async (effect, _) =>
             {
                 effect.AddGrantingOfTechnical(creature => creature.EnemyOf(cr), qfTech =>
                 {
-                    qfTech.WhenCreatureDiesAtStateCheckAsync = _ =>
+                    qfTech.WhenCreatureDiesAtStateCheckAsync = async _ =>
                     {
                         cr.AddQEffect(new QEffect(ExpirationCondition.CountsDownAtStartOfSourcesTurn)
                         {
@@ -211,10 +214,8 @@ public abstract partial class Commander
                             Value = 2,
                             Id = MQEffectIds.DeathCounter
                         });
-                        return Task.CompletedTask;
                     };
                 });
-                return Task.CompletedTask;
             }
         };
         yield return new QEffect
@@ -289,6 +290,10 @@ public abstract partial class Commander
                     ? new ActionPossibility(TakeTheHighGround(cr))
                     : null
         };
+        foreach (QEffect effect in MasterTactics.MasterTacticsEffects(cr))
+        {
+            yield return effect;
+        }
     }
 
     #region tactics actions
@@ -299,20 +304,21 @@ public abstract partial class Commander
         CombatAction tactic = new CombatAction(owner, MIllustrations.GatherToMe, "Gather to Me!",
                 [MTraits.Tactic, MTraits.Commander, Trait.Basic],
                 "Signal all squadmates; each can immediately Stride as a reaction, though each must end their movement inside your banner’s aura or as close to your banner's aura as their movement Speed allows.",
-                squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr))
+                squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr) && new TacticResponseRequirement().Satisfied(owner, cr))
                     ? AllSquadmateTarget(owner)
-                    : Target.Uncastable("There must be at least one squadmate who can take a reaction."))
+                    : Target.Uncastable("There must be at least one squadmate who can take a reaction to a tactic."))
             .WithActionCost(1)
             .WithSoundEffect(SfxName.BeastRoar)
-            .WithEffectOnChosenTargets(async (_, caster, targets) =>
+            .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                var drilledTargets = DrilledTargets(targets, caster);
+                List<Creature> drilledTargets = DrilledTargets(targets, caster);
                 Creature? bannerHolder = caster.Battle.AllCreatures.FirstOrDefault(cr => IsMyBanner(caster, cr));
                 Tile? bannerTile = caster.Battle.Map.AllTiles.FirstOrDefault(tile => IsMyBanner(caster, tile));
                 bool useDrilledReactions = UseDrilledReactions(caster);
                 bool usedDrill = false;
                 bool lostReaction = false;
                 bool animalReact = false;
+                var moved = false;
                 if (bannerHolder != null && targets.ChosenCreatures.Contains(bannerHolder) &&
                     new TacticResponseRequirement().Satisfied(caster, bannerHolder) == Usability.Usable && CanTakeReaction(useDrilledReactions, bannerHolder, drilledTargets, caster))
                 {
@@ -335,6 +341,7 @@ public abstract partial class Commander
                     if (await bannerHolder.StrideAsync("Move up to your speed.", allowCancel: true))
                     {
                         bannerHolder.AddQEffect(RespondedToTactic(caster));
+                        moved = true;
                     }
                     else
                     {
@@ -346,7 +353,6 @@ public abstract partial class Commander
                             bannerHolder.AddQEffect(AnimalReaction(caster));
                     }
                 }
-
                 foreach (Creature target in targets.ChosenCreatures.Where(c => c != bannerHolder))
                 {
                     useDrilledReactions = UseDrilledReactions(caster);
@@ -452,9 +458,12 @@ public abstract partial class Commander
                             await target.StrideAsync(target.Name + " move as close to the banner area as possible.",
                                 strideTowards: tileOption.Tile);
                             target.AddQEffect(RespondedToTactic(caster));
+                            moved = true;
                             break;
                     }
                 }
+                if (!moved)
+                    spell.RevertRequested = true;
             });
         return tactic;
     }
@@ -567,9 +576,9 @@ public abstract partial class Commander
                 AllSquadmateTarget(owner))
             .WithActionCost(1)
             .WithSoundEffect(SfxName.BeastRoar)
-            .WithEffectOnEachTarget((_, caster, target, _) =>
+            .WithEffectOnEachTarget(async (_, caster, target, _) =>
             {
-                if (target.HasEffect(MQEffectIds.TacticResponse)) return Task.CompletedTask;
+                if (target.HasEffect(MQEffectIds.TacticResponse)) return;
                 target.AddQEffect(new QEffect("Naval Training", "You have a swim speed.",
                     ExpirationCondition.ExpiresAtEndOfSourcesTurn, owner, IllustrationName.WaterWalk)
                 {
@@ -577,7 +586,6 @@ public abstract partial class Commander
                     CannotExpireThisTurn = true
                 });
                 target.AddQEffect(RespondedToTactic(caster));
-                return Task.CompletedTask;
             });
         return tactic;
     }
@@ -608,6 +616,8 @@ public abstract partial class Commander
                     {
                         Tile selfStart = self.Occupies;
                         Tile allyStart = ally.Occupies;
+                        await self.SingleTileMove(allyStart, spell);
+                        await ally.SingleTileMove(selfStart, spell);
                         await self.SingleTileMove(allyStart, spell);
                         await ally.SingleTileMove(selfStart, spell);
                     });
@@ -743,15 +753,15 @@ public abstract partial class Commander
         CombatAction pincerAttack = new CombatAction(owner, MIllustrations.PincerAttack,
                 "Pincer Attack", [MTraits.Commander, MTraits.Tactic],
                 "Signal all squadmates; each can Step as a reaction. If any of your allies end this movement adjacent to an opponent, that opponent is off-guard to melee attacks from you and all other squadmates who responded to Pincer Attack until the start of your next turn.",
-                squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr))
+                squadmates.Any(cr => new ReactionRequirement().Satisfied(owner, cr) && new TacticResponseRequirement().Satisfied(owner, cr))
                     ? AllSquadmateTarget(owner)
-                    : Target.Uncastable("There must be at least one squadmate who can take a reaction."))
+                    : Target.Uncastable("There must be at least one squadmate who can take a reaction to a tactic."))
             .WithActionCost(1)
             .WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                var drilledTargets = DrilledTargets(targets, caster);
-                bool cancel = true;
+                List<Creature> drilledTargets = DrilledTargets(targets, caster);
+                var cancel = true;
                 foreach (Creature target in targets.ChosenCreatures)
                 {
                     bool useDrilledReactions = UseDrilledReactions(caster);
@@ -1509,7 +1519,7 @@ public abstract partial class Commander
             .WithActionCost(2).WithSoundEffect(SfxName.BeastRoar)
             .WithEffectOnChosenTargets(async (spell, caster, targets) =>
             {
-                List<Creature?> drilledTargets = DrilledTargets(targets, caster);
+                List<Creature> drilledTargets = DrilledTargets(targets, caster);
                 var moved = false;
                 List<Creature> players = [];
                 List<Creature> chosenEnemies = [];
@@ -1538,33 +1548,7 @@ public abstract partial class Commander
                             .CreateActions(true)
                             .FirstOrDefault(pw => pw.Action.ActionId == ActionId.Stride) as CombatAction)
                         ?.WithActionCost(0);
-                    List<Tile> floodFill = Pathfinding.Floodfill(target, target.Battle, new PathfindingDescription()
-                        {
-                            Squares = target.Speed,
-                            Style =
-                            {
-                                PermitsStep = false
-                            }
-                        })
-                        .Where(tile =>
-                            (tile.LooksFreeTo(target) || tile.Equals(target.Occupies)) && enemy.Space.Tiles.Any(t => t.IsAdjacentTo(tile)))
-                        .ToList();
-                    if (floodFill.Count == 0)
-                    {
-                        floodFill = Pathfinding.Floodfill(target, target.Battle, new PathfindingDescription()
-                            {
-                                Squares = 100
-                            })
-                            .Where(tile =>
-                                tile.LooksFreeTo(target) && enemy.Space.Tiles.Any(t => t.IsAdjacentTo(tile)))
-                            .ToList();
-                    }
-
-                    floodFill.ForEach(tile =>
-                    {
-                        if (moveAction == null || !(bool)moveAction.Target.CanBeginToUse(target)) return;
-                        tileOptions.Add(moveAction.CreateUseOptionOn(tile).WithIllustration(moveAction.Illustration));
-                    });
+                    FloodfillAdjacent(target, enemy, moveAction, tileOptions);
                     Option move = (await target.Battle.SendRequest(
                         new AdvancedRequest(target,
                             "Choose a square adjacent to the enemy you selected.",
