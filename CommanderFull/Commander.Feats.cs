@@ -351,10 +351,14 @@ public abstract partial class Commander
         warden.Prerequisites.RemoveAll(req =>
             req.Description.Contains("must have Shield Ally") || req.Description.Contains("must be a Fighter"));
         warden.WithPrerequisite( 
-            values => values.HasFeat(FeatName.Fighter) || values.HasFeat(MFeatNames.Commander) ||
+            values => values.Class?.ClassTrait == Trait.Fighter || values.Class?.ClassTrait == MTraits.Commander || values.AdditionalClassTraits.Any(tr => tr == Trait.Fighter || tr == MTraits.Commander) ||
                       values.HasFeat(Dawnsbury.Core.CharacterBuilder.FeatsDb.Champion.Champion
                           .ShieldAllyFeatName),
             "You must be a Fighter, a Commander, or you must have Shield Ally as your divine ally.");
+        Feat reactive = AllFeats.GetFeatByFeatName(FeatName.ReactiveInterference);
+        reactive.Traits.Add(MTraits.Commander);
+        reactive.Prerequisites.RemoveAll(req => req.Description.Contains("must be a Rogue"));
+        reactive.WithPrerequisite(values => values.Class?.ClassTrait == Trait.Rogue || values.Class?.ClassTrait == MTraits.Commander || values.AdditionalClassTraits.Any(tr => tr == Trait.Rogue || tr == MTraits.Commander), "You must be a commander or a rogue.");
     }
 
     #region logics
@@ -365,12 +369,8 @@ public abstract partial class Commander
             "You ignore the reduction to your Speed from any armor you wear and you can rest normally while wearing armor of any type.",
             qfFeat =>
             {
-                qfFeat.StartOfCombatBeforeOpeningCutscene = qfThis =>
-                {
-                    qfThis.Tag = qfThis.Owner.BaseArmor;
-                    return Task.CompletedTask;
-                };
-                qfFeat.StartOfCombat = qfThis =>
+                qfFeat.StartOfCombatBeforeOpeningCutscene = async qfThis => qfThis.Tag = qfThis.Owner.BaseArmor;
+                qfFeat.StartOfCombat = async qfThis =>
                 {
                     if (qfThis.Owner.BaseArmor is null && qfThis.Tag is Item { ArmorProperties: not null } tagItem)
                     {
@@ -389,8 +389,6 @@ public abstract partial class Commander
                                 self.Battle.Cinematics.TutorialBubble = null;
                             };
                     }
-
-                    return Task.CompletedTask;
                 };
                 qfFeat.Id = MQEffectIds.ArmorRegiment;
             });

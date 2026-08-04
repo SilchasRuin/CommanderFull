@@ -99,15 +99,15 @@ public class DawnniRequired
             {
                 Creature self = qf.Owner;
                 var apply = true;
-                qf.StartOfYourPrimaryTurn = (_, _) =>
+                qf.StartOfYourPrimaryTurn = async (_, _) =>
                 {
-                    if (!apply) return Task.CompletedTask;
+                    if (!apply) return;
                     qf.AddGrantingOfTechnical(cr => cr.EnemyOf(self), qfTech =>
                     {
-                        qfTech.YouAreTargeted = (_, action) =>
+                        qfTech.YouAreTargeted = async (_, action) =>
                         {
                             if (action.SpellInformation == null && !action.HasTrait(Trait.Strike))
-                                return Task.CompletedTask;
+                                return;
                             if (action.Owner == self ||
                                 self.Battle.AllCreatures.Any(cr =>
                                     cr.FriendOfAndNotSelf(self) && action.Owner == cr))
@@ -120,12 +120,9 @@ public class DawnniRequired
                                         Source = self
                                     });
                             }
-
-                            return Task.CompletedTask;
                         };
                     });
                     apply = false;
-                    return Task.CompletedTask;
                 };
             });
     }

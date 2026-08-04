@@ -8,6 +8,7 @@ using Dawnsbury.Audio;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Core.Creatures;
 using Dawnsbury.Core.Mechanics;
+using Dawnsbury.Core.Mechanics.Core;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Rules;
 using Dawnsbury.Core.Mechanics.Targeting;
@@ -20,37 +21,22 @@ using HarmonyLib;
 using static CommanderFull.ModData;
 
 namespace CommanderFull;
-[HarmonyPatch(typeof(Creature), nameof(Creature.RecalculateLandSpeedAndInitiative))]
+[HarmonyPatch(typeof(Creature), nameof(Creature.DetermineLandSpeed))]
 internal static class ArmorRegiment
 {
-    internal static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+    internal static void Postfix(Creature __instance, ref (int, string) __result)
     {
-        var matcher = new CodeMatcher(instructions, generator);
-        //match: ldloc. to ldfld bool unburdenedIron to brtrue/brtrue.s
-        matcher.MatchStartForward(
-            new CodeMatch(ci => ci.opcode.Name != null && ci.opcode.Name.StartsWith("ldloc")),
-            new CodeMatch(ci => ci.opcode == OpCodes.Ldfld && IsUnburdenedIronField(ci.operand)),
-            new CodeMatch(ci => ci.opcode == OpCodes.Brtrue || ci.opcode == OpCodes.Brtrue_S)
-        );
-        if (!matcher.IsValid) return matcher.InstructionEnumeration();
-        MethodInfo shouldSkipMethod = AccessTools.Method(typeof(MyConditionPatch), nameof(MyConditionPatch.ShouldSkip));
-        //advance to before the branch
-        matcher.Advance(2);
-        matcher.Insert(
-            new CodeInstruction(OpCodes.Ldarg_0),
-            new CodeInstruction(OpCodes.Call, shouldSkipMethod),
-            new CodeInstruction(OpCodes.Or)
-        );
-        return matcher.InstructionEnumeration();
-    }
-
-    private static bool IsUnburdenedIronField(object operand)
-    {
-        if (operand is FieldInfo fieldInfo)
-            return fieldInfo.FieldType == typeof(bool) && fieldInfo.Name == "unburdenedIron";
-        //fallback to string check
-        string? opStr = operand.ToString();
-        return opStr != null && opStr.Contains("unburdenedIron") && opStr.Contains("Boolean");
+        if (__instance.HasEffect(QEffectId.UnburdenedIron) || !__instance.HasEffect(MQEffectIds.ArmorRegiment))
+            return;
+        if (__instance.Armor.SpeedBonus >= 0)
+            return;
+        int original = __result.Item1;
+        __result.Item1 +=  Math.Abs(__instance.Armor.SpeedBonus);
+        if (__result.Item2 == "") return;
+        List<Bonus> armorBonus = [new(__instance.Armor.SpeedBonus, BonusType.Untyped, __instance.Armor.Item?.Name.Capitalize() ?? "")];
+        (int bonusTotal, string bonusDescription) = Bonus.CalculateBestNonNull(armorBonus, true, true);
+        __result.Item2 = __result.Item2.Replace("\n" + bonusDescription, "");
+        __result.Item2 = __result.Item2.Replace($"{{b}}{original * 5} feet{{/b}} Final speed", $"{{b}}{__result.Item1 * 5} feet{{/b}} Final speed");
     }
 }
 

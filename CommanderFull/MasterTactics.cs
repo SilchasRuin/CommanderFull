@@ -25,32 +25,32 @@ public abstract class MasterTactics : Commander
         yield return new ActionFeat(MFeatNames.RoaringCharge, "You and your squad surge forward with a mighty roar.", 
             "Once per encounter: signal all squadmates within the aura of your commander’s banner. As a reaction, these squadmates can Stride up to twice their Speed directly toward any enemy they are observing. Any creature within 10 feet of a squadmate once all movement from this tactic has been completed must attempt a Will save against your class DC with the following results. This is an emotion, fear, incapacitation, and mental effect." +
             S.FourDegreesOfSuccess("No effect", "The target is frightened 1.", "The target is frightened 2.", "The target is frightened 3 and fleeing for 1 round."),
-            [MTraits.Commander, MTraits.Tactic, MTraits.MasterTactic])
+            [MTraits.Tactic, MTraits.MasterTactic])
             .WithActionCost(2)
             .WithIllustration(MIllustrations.CreateIllustration("RoaringCharge"));
         yield return new ActionFeat(MFeatNames.PiranhaAssault, "You know that a thousand small bites can fell a large foe just as surely a single well-placed hit.",
             "Once per encounter: designate a creature within the aura of your commander's banner and signal all squadmates; for 1 minute, each time they attack that creature and deal damage to it of a type the creature resists, they ignore an amount of that creature’s resistance equal to your level.",
-            [MTraits.Commander, MTraits.Tactic, MTraits.MasterTactic])
+            [MTraits.Tactic, MTraits.MasterTactic])
             .WithActionCost(1)
             .WithIllustration(MIllustrations.CreateIllustration("Piranha"));
         yield return new ActionFeat(MFeatNames.PopDropLock, "You command your squadmates to perform a devastating coordinated takedown.",
                 "Once per encounter: choose an enemy and signal up to three squadmates within the aura of your commander's banner who all have that enemy within their reach; the squadmates can attempt to Strike, Trip, or Grapple the enemy as a reaction. Each squadmate can only attempt one specific action granted by this tactic, the actions can be attempted in any order and a specific action can only be attempted once as part of this tactic.",
-            [MTraits.Brandish, MTraits.Commander, MTraits.Tactic, MTraits.MasterTactic])
+            [MTraits.Brandish, MTraits.Tactic, MTraits.MasterTactic])
             .WithActionCost(2)
             .WithIllustration(MIllustrations.CreateIllustration("PopDropLock"));
         yield return new ActionFeat(MFeatNames.ReadyAimFire, "You signal a volley of ranged attacks from your allies.",
                 "Once per encounter: choose an enemy and signal up to three squadmates within the aura of your commander's banner; your squadmates can Interact to reload as a free action and attempt a ranged Strike against the enemy as a reaction." +
                 "\n\n{b}Special{/b} If one of your squadmates knows or has prepared a cantrip with a range of 30 feet or more that deals damage and requires 2 or fewer actions to cast, they can cast it targeting the enemy instead of taking the other actions normally granted by this tactic.",
-            [MTraits.Brandish, MTraits.Commander, MTraits.Tactic, MTraits.MasterTactic])
+            [MTraits.Brandish, MTraits.Tactic, MTraits.MasterTactic])
             .WithActionCost(2)
             .WithIllustration(MIllustrations.CreateIllustration("ReadyAimFire"));
         yield return new ActionFeat(MFeatNames.TheBiggerTheyAre, "Regardless of your individual strengths, collectively your squad has the power to move mountains and topple giants.",
             "Signal a squadmate within the aura of your commander's banner. That squadmate can attempt to Reposition, Shove, or Trip a target within their reach as a free action. Each other squadmate who is adjacent to the original squadmate or the target can attempt to assist with the maneuver as a reaction. For each squadmate who assists in this way, the original squadmate increases the maximum size of creature they can target (for example, if a total of two squadmates participated in this maneuver, the initial squadmate could target a creature up to two sizes larger than them.) The original squadmate gains a circumstance bonus on their check to Reposition, Shove, or Trip equal to the number of additional squadmates who assisted in the maneuver (maximum +4).",
-            [MTraits.Brandish, MTraits.Commander, MTraits.Tactic, MTraits.MasterTactic])
+            [MTraits.Brandish, MTraits.Tactic, MTraits.MasterTactic])
             .WithActionCost(1)
             .WithIllustration(MIllustrations.Reposition);
         yield return new ActionFeat(MFeatNames.MirroredWall, "Your squadmates have polished their shields to a reflective sheen and now position them to reflect a blinding light into your enemy’s eyes",
-            MirroredWall(Creature.DefaultCreature).Description, [MTraits.Commander, MTraits.Tactic, MTraits.MasterTactic, Trait.Visual])
+            MirroredWall(Creature.DefaultCreature).Description, [MTraits.Tactic, MTraits.MasterTactic, Trait.Visual])
             .WithActionCost(2)
             .WithIllustration(MirroredWall(Creature.DefaultCreature).Illustration);
     }
